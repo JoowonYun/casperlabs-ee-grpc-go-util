@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package io.casperlabs.ipc;
 
-import "io/casperlabs/casper/consensus/state.proto";
+import "io/casperlabs/casper/consensus/state/state.proto";
 
 message TypeMismatch {
     string expected = 1;

@@ -1,7 +1,7 @@
 syntax = "proto3";
 package io.casperlabs.casper.consensus;
 
-import "io/casperlabs/casper/consensus/state.proto";
+import "io/casperlabs/casper/consensus/state/state.proto";
 
 // Signature over for example a deploy or a block. The location of the public key depends
 // on the subject; for example if it's a block then the key is actually part of the data
