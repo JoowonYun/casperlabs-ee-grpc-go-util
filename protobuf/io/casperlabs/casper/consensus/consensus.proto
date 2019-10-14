@@ -1,0 +1,191 @@
+syntax = "proto3";
+package io.casperlabs.casper.consensus;
+
+import "io/casperlabs/casper/consensus/state.proto";
+
+// Signature over for example a deploy or a block. The location of the public key depends
+// on the subject; for example if it's a block then the key is actually part of the data
+// that needs to be signed over.
+message Signature {
+    // One of the supported algorithms: ed25519, secp256k1
+    string sig_algorithm = 1;
+    bytes sig = 2;
+}
+
+// A signature together with the corresponding public key that can be used to validate it
+// for situations where the key is not part of the data being signed, which is usually the
+// case where multiple signatures are required.
+message Approval {
+    bytes approver_public_key = 1;
+    Signature signature = 2;
+}
+
+// A smart contract invocation, singed by the account that sent it.
+message Deploy {
+    // blake2b256 hash of the `header`.
+    bytes deploy_hash = 1;
+    Header header = 2;
+    Body body = 3;
+
+    // Signatures over `deploy_hash` with either the `account_public_key`, or some other keys in case of
+    // multi-sig wallets and account recovery (when the private key corresponding to `account_public_key`
+    // is lost.)
+    repeated Approval approvals = 4;
+
+    message Header {
+        // Removed the nonce.
+        reserved 2;
+        // Identifying the Account is the key used to sign the Deploy.
+        bytes account_public_key = 1;
+        // Current time milliseconds.
+        uint64 timestamp = 3;
+        // Conversion rate between the cost of Wasm opcodes and the motes sent by the `payment_code`.
+        uint64 gas_price = 4;
+        // Hash of the body structure as a whole.
+        bytes body_hash = 5;
+    }
+
+    message Body {
+        // Wasm code of the smart contract to be executed.
+        Code session = 1;
+        // Wasm code that transfers some motes to the validators as payment in exchange to run the Deploy.
+        // Note: the word "mote" means "a tiny piece of a substance". Here we are referring to the smallest,
+        // indivisible unit of the CL token. This is the equivalent of a Satoshi on Bitcoin or a Wei on Ethereum.
+        Code payment = 2;
+    }
+
+    // Code (either session or payment) to be deployed to the platform.
+    // Includes both binary instructions (wasm) and optionally, arguments
+    // to those instructions encoded via our ABI
+    message Code {
+        oneof contract {
+            // Wasm byte code.
+            bytes wasm = 1;
+            // Public hash address of an already stored contract.
+            bytes hash = 3;
+            // Name of a stored contract associated with the executing account (uref or hash).
+            string name = 4;
+            // URef of a stored contract.
+            bytes uref = 5;
+        }
+        // Deprecated, use `args` instead.
+        bytes abi_args = 2; // ABI-encoded arguments
+        // Keyword arguments. Note that while the execution engine works with the original
+        // positional argument passing style, the order of the arguments matters.
+        repeated Arg args = 6;
+    }
+
+    message Arg {
+        string name = 1;
+        // Note that until the EE doesn't support kwargs directly, missing an Empty values are
+        // not allowed because they would be ambiguous.
+        Value value = 2;
+        // Subset of cases in `state.Value` that can be used as input for contract calls.
+        message Value {
+            oneof value {
+                // Explicitly mark a value as Some or None in the ABI.
+                Value optional_value = 1;
+                bytes bytes_value = 2;
+                int32 int_value = 3;
+                state.IntList int_list = 4;
+                string string_value = 5;
+                state.StringList string_list = 6;
+                int64 long_value = 7;
+                state.BigInt big_int = 8;
+                state.Key key = 9;
+            }
+        }
+    }
+}
+
+// Limited block information for gossiping.
+message BlockSummary {
+    // blake2b256 hash of the `header`.
+    bytes block_hash = 1;
+    Block.Header header = 2;
+    // Signature over `block_hash` using `validator_public_key`.
+    Signature signature = 3;
+}
+
+// Full block information.
+message Block {
+    // blake2b256 hash of the `header`.
+    bytes block_hash = 1;
+    Header header = 2;
+    Body body = 3;
+    // Signature over `block_hash`.
+    Signature signature = 4;
+
+    message Header {
+        repeated bytes parent_hashes = 1;
+        repeated Justification justifications = 2;
+        GlobalState state = 3;
+        // Hash of the body structure as a whole.
+        bytes body_hash = 4;
+        uint64 timestamp = 5;
+        uint64 protocol_version = 6;
+        uint32 deploy_count = 7;
+        string chain_id = 8;
+        uint32 validator_block_seq_num = 9;
+        bytes validator_public_key = 10;
+        // Distance from Genesis.
+        uint64 rank = 11;
+        Role role_type = 12;
+    }
+
+    enum Role {
+        // Regular block (with deploys, multiple parents etc).
+        BLOCK  = 0;
+        // A message that doesn't have any deploys,
+        // targets one block (no secondary parents),
+        // and cannot be used as a parent (is a leaf in the DAG).
+        BALLOT = 1;
+    }
+
+    message Body {
+        repeated ProcessedDeploy deploys = 1;
+    }
+
+    message Justification {
+        bytes validator_public_key = 1;
+        bytes latest_block_hash = 2;
+    }
+
+    message ProcessedDeploy {
+        Deploy deploy = 1;
+        uint64 cost = 2;
+        bool is_error = 3;
+        string error_message = 4;
+    }
+
+    message GlobalState {
+        // May not correspond to a particular block if there are multiple parents.
+        bytes pre_state_hash = 1;
+        bytes post_state_hash = 2;
+        // Included in header so lightweight nodes can follow the consensus.
+        repeated Bond bonds = 3;
+    }
+}
+
+message Bond {
+    bytes validator_public_key = 1;
+    uint64 stake = 2;
+}
+
+
+// To allow nodes in the beginning to verify that they are joining the right network,
+// while there is no DAG to look at, they disseminate approvals for the Genesis candidate
+// until it gathers enough support for individual nodes to pass their thresholds and
+// transition to processing blocks and deploys.
+// Nodes should persist this value to be able to retrieve it later even if in case all nodes are restarted.
+message GenesisCandidate {
+    // The hash of the Genesis block, which should reflect the effects of executing
+    // the block that was compiled according to the published specification.
+    // The Genesis block is special in that it is not signed by any one validator:
+    // all the signatures are going to be missing, all the public key fields empty,
+    // including those that would sign the deploys in the body.
+    bytes block_hash = 1;
+
+    // Approvals from bonded validators with signatures over the `block_hash`.
+    repeated Approval approvals = 2;
+}
