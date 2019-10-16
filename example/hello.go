@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/joowonyun/casperlabs-ee-grpc-go-util/util"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 
-	"github.com/joowonyun/casperlabs-ee-grpc-go-util/grpc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
 )
 
 func main() {

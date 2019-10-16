@@ -1,4 +1,4 @@
-module github.com/joowonyun/casperlabs-ee-grpc-go-util
+module github.com/hdac-io/casperlabs-ee-grpc-go-util
 
 go 1.12
 

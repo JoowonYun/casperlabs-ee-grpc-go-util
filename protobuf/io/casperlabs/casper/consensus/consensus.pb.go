@@ -6,7 +6,7 @@ package consensus
 import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	state "github.com/joowonyun/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
+	state "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	math "math"
 )
 

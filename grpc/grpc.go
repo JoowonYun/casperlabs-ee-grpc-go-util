@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	cons "github.com/joowonyun/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
-	state "github.com/joowonyun/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
-	ipc "github.com/joowonyun/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
+	cons "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
+	state "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
+	ipc "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
 
-	"github.com/joowonyun/casperlabs-ee-grpc-go-util/util"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
