@@ -2,35 +2,41 @@ package main
 
 import (
 	"bytes"
-	"encoding/hex"
 	"time"
+
+	"github.com/joowonyun/casperlabs-ee-grpc-go-util/util"
+
+	"github.com/joowonyun/casperlabs-ee-grpc-go-util/grpc"
 )
 
 func main() {
-	client := connect(`/Users/yun/.casperlabs/.casper-node.sock`)
+	// Connect to ee sock.
+	client := grpc.Connect(`/Users/yun/.casperlabs/.casper-node.sock`)
 
+	// laod wasm code
 	mintCode, posCode, cntDefCode, cntCallCode := loadWasmCode()
 
-	mintResult := validate(client, mintCode)
+	// validate all wasm code
+	mintResult := grpc.Validate(client, mintCode)
 	println(mintResult)
-	posResult := validate(client, posCode)
+	posResult := grpc.Validate(client, posCode)
 	println(posResult)
-	cntDefResult := validate(client, cntDefCode)
+	cntDefResult := grpc.Validate(client, cntDefCode)
 	println(cntDefResult)
-	cntCallResult := validate(client, cntCallCode)
+	cntCallResult := grpc.Validate(client, cntCallCode)
 	println(cntCallResult)
 
-	emptyStateHash := decodeHexString(strEmptyStateHash)
-
+	// Init variable
+	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
-
 	genesisAddress := "d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
 	validateAddress1 := "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
 	validates := map[string]string{
 		validateAddress1: "100",
 	}
 
-	parentStateHash, effects := runGenensis(client,
+	// Run genesis and commit
+	parentStateHash, effects := grpc.RunGenensis(client,
 		genesisAddress,
 		"100",
 		0,
@@ -39,50 +45,53 @@ func main() {
 		validates,
 		1)
 
-	postStateHash, bonds := commit(client, rootStateHash, effects)
+	postStateHash, bonds := grpc.Commit(client, rootStateHash, effects)
 	if bytes.Equal(postStateHash, parentStateHash) {
 		rootStateHash = postStateHash
 	}
 
 	println(bonds[0].String())
 
-	effects2 := execute(client, rootStateHash, time.Now().Unix(), 10, genesisAddress, cntDefCode, cntDefCode, 1)
+	// Run "Counter Define contract"
+	effects2 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, cntDefCode, uint64(0), 1)
 
-	postStateHash2, bonds2 := commit(client, rootStateHash, effects2)
+	postStateHash2, bonds2 := grpc.Commit(client, rootStateHash, effects2)
 	rootStateHash = postStateHash2
-	println(hex.EncodeToString(postStateHash2))
+	println(util.EncodeToHexString(postStateHash2))
 	println(bonds2[0].String())
 
-	effects3 := execute(client, rootStateHash, time.Now().Unix(), 10, genesisAddress, cntCallCode, cntCallCode, 1)
+	// Run "Counter Call contract"
+	effects3 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, uint64(0), 1)
 
-	postStateHash3, bonds3 := commit(client, rootStateHash, effects3)
+	postStateHash3, bonds3 := grpc.Commit(client, rootStateHash, effects3)
 	rootStateHash = postStateHash3
-	println(hex.EncodeToString(postStateHash3))
+	println(util.EncodeToHexString(postStateHash3))
 	println(bonds3[0].String())
 
+	// Query counter contract.
 	path := []string{"counter", "count"}
-	queryResult1, queryData1 := query(client, rootStateHash, genesisAddress, path)
+	queryResult1, queryData1 := grpc.Query(client, rootStateHash, genesisAddress, path)
 	println(queryResult1, queryData1.GetIntValue())
 
-	effects4 := execute(client, rootStateHash, time.Now().Unix(), 10, genesisAddress, cntCallCode, cntCallCode, 1)
+	effects4 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, uint64(0), 1)
 
-	postStateHash4, bonds4 := commit(client, rootStateHash, effects4)
+	postStateHash4, bonds4 := grpc.Commit(client, rootStateHash, effects4)
 	rootStateHash = postStateHash4
-	println(hex.EncodeToString(postStateHash4))
+	println(util.EncodeToHexString(postStateHash4))
 	println(bonds4[0].String())
 
-	queryResult2, queryData2 := query(client, rootStateHash, genesisAddress, path)
+	queryResult2, queryData2 := grpc.Query(client, rootStateHash, genesisAddress, path)
 	println(queryResult2, queryData2.GetIntValue())
 }
 
 func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte) {
-	mintCode = loadWasmFile("./contracts/mint_token.wasm")
+	mintCode = util.LoadWasmFile("./contracts/mint_token.wasm")
 
-	posCode = loadWasmFile("./contracts/pos.wasm")
+	posCode = util.LoadWasmFile("./contracts/pos.wasm")
 
-	cntDefCode = loadWasmFile("./contracts/counterdefine.wasm")
+	cntDefCode = util.LoadWasmFile("./contracts/counterdefine.wasm")
 
-	cntCallCode = loadWasmFile("./contracts/countercall.wasm")
+	cntCallCode = util.LoadWasmFile("./contracts/countercall.wasm")
 
 	return mintCode, posCode, cntDefCode, cntCallCode
 }

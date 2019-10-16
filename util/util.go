@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"encoding/hex"
@@ -7,9 +7,9 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-const strEmptyStateHash = "3307a54ca6d5bfbafc0ef1b003f3ec4941c011ee7f79889e44416754de2f091d"
+const StrEmptyStateHash = "3307a54ca6d5bfbafc0ef1b003f3ec4941c011ee7f79889e44416754de2f091d"
 
-func loadWasmFile(path string) []byte {
+func LoadWasmFile(path string) []byte {
 	wasmCode, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
@@ -18,7 +18,11 @@ func loadWasmFile(path string) []byte {
 	return wasmCode
 }
 
-func decodeHexString(str string) []byte {
+func EncodeToHexString(src []byte) string {
+	return hex.EncodeToString(src)
+}
+
+func DecodeHexString(str string) []byte {
 	res, err := hex.DecodeString(str)
 	if err != nil {
 		panic(err)
@@ -27,7 +31,7 @@ func decodeHexString(str string) []byte {
 	return res
 }
 
-func blake2b256(ob []byte) []byte {
+func Blake2b256(ob []byte) []byte {
 	hash, err := blake2b.New256(nil)
 	if err != nil {
 		panic(err)
