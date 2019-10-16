@@ -11,7 +11,7 @@ $ export GO111MODULE=on
 ```
 - Download to module in $GOPATH
 ```bash
-$ go get github.com/hdac-io/casperlabs-ee-grpc-go-util
+$ go get -u github.com/hdac-io/casperlabs-ee-grpc-go-util
 ```
 
 ## Example
