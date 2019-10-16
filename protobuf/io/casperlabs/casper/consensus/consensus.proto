@@ -1,4 +1,5 @@
 syntax = "proto3";
+option go_package = "github.com/joowonyun/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus";
 package io.casperlabs.casper.consensus;
 
 import "io/casperlabs/casper/consensus/state/state.proto";
