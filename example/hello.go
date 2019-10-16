@@ -85,13 +85,13 @@ func main() {
 }
 
 func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte) {
-	mintCode = util.LoadWasmFile("./contracts/mint_token.wasm")
+	mintCode = util.LoadWasmFile("./example/contracts/mint_token.wasm")
 
-	posCode = util.LoadWasmFile("./contracts/pos.wasm")
+	posCode = util.LoadWasmFile("./example/contracts/pos.wasm")
 
-	cntDefCode = util.LoadWasmFile("./contracts/counterdefine.wasm")
+	cntDefCode = util.LoadWasmFile("./example/contracts/counterdefine.wasm")
 
-	cntCallCode = util.LoadWasmFile("./contracts/countercall.wasm")
+	cntCallCode = util.LoadWasmFile("./example/contracts/countercall.wasm")
 
 	return mintCode, posCode, cntDefCode, cntCallCode
 }
