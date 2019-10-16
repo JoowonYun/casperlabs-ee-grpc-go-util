@@ -1,0 +1,14 @@
+sudo: false
+language: go
+go:
+- 1.12.x
+
+install:
+  
+env:
+  - export GO111MODULE=on
+script:
+  - make clean
+  - make install
+  - make test
+
