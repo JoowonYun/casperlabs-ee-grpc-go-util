@@ -17,13 +17,13 @@ func main() {
 	mintCode, posCode, cntDefCode, cntCallCode := loadWasmCode()
 
 	// validate all wasm code
-	mintResult := grpc.Validate(client, mintCode)
+	mintResult := grpc.Validate(client, mintCode, 1)
 	println(mintResult)
-	posResult := grpc.Validate(client, posCode)
+	posResult := grpc.Validate(client, posCode, 1)
 	println(posResult)
-	cntDefResult := grpc.Validate(client, cntDefCode)
+	cntDefResult := grpc.Validate(client, cntDefCode, 1)
 	println(cntDefResult)
-	cntCallResult := grpc.Validate(client, cntCallCode)
+	cntCallResult := grpc.Validate(client, cntCallCode, 1)
 	println(cntCallResult)
 
 	// Init variable
@@ -45,42 +45,42 @@ func main() {
 		validates,
 		1)
 
-	postStateHash, bonds := grpc.Commit(client, rootStateHash, effects)
+	postStateHash, bonds := grpc.Commit(client, rootStateHash, effects, 1)
 	if bytes.Equal(postStateHash, parentStateHash) {
 		rootStateHash = postStateHash
 	}
-
+	println(util.EncodeToHexString(rootStateHash))
 	println(bonds[0].String())
 
 	// Run "Counter Define contract"
-	effects2 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, cntDefCode, uint64(0), 1)
+	effects2 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, cntDefCode, 1)
 
-	postStateHash2, bonds2 := grpc.Commit(client, rootStateHash, effects2)
+	postStateHash2, bonds2 := grpc.Commit(client, rootStateHash, effects2, 1)
 	rootStateHash = postStateHash2
 	println(util.EncodeToHexString(postStateHash2))
 	println(bonds2[0].String())
 
 	// Run "Counter Call contract"
-	effects3 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, uint64(0), 1)
+	effects3 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, 1)
 
-	postStateHash3, bonds3 := grpc.Commit(client, rootStateHash, effects3)
+	postStateHash3, bonds3 := grpc.Commit(client, rootStateHash, effects3, 1)
 	rootStateHash = postStateHash3
 	println(util.EncodeToHexString(postStateHash3))
 	println(bonds3[0].String())
 
 	// Query counter contract.
 	path := []string{"counter", "count"}
-	queryResult1, queryData1 := grpc.Query(client, rootStateHash, genesisAddress, path)
+	queryResult1, queryData1 := grpc.Query(client, rootStateHash, genesisAddress, path, 1)
 	println(queryResult1, queryData1.GetIntValue())
 
-	effects4 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, uint64(0), 1)
+	effects4 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, 1)
 
-	postStateHash4, bonds4 := grpc.Commit(client, rootStateHash, effects4)
+	postStateHash4, bonds4 := grpc.Commit(client, rootStateHash, effects4, 1)
 	rootStateHash = postStateHash4
 	println(util.EncodeToHexString(postStateHash4))
 	println(bonds4[0].String())
 
-	queryResult2, queryData2 := grpc.Query(client, rootStateHash, genesisAddress, path)
+	queryResult2, queryData2 := grpc.Query(client, rootStateHash, genesisAddress, path, 1)
 	println(queryResult2, queryData2.GetIntValue())
 }
 

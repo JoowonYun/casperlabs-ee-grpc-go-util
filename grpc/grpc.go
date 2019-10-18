@@ -49,7 +49,7 @@ func RunGenensis(
 			&ipc.Bond{ValidatorPublicKey: util.DecodeHexString(address), Stake: &state.BigInt{Value: stake, BitWidth: 512}})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	r, err := client.RunGenesis(
@@ -61,7 +61,7 @@ func RunGenensis(
 			MintCode:          deployMintCode,
 			ProofOfStakeCode:  deployPosCode,
 			GenesisValidators: genesisValidators,
-			ProtocolVersion:   &state.ProtocolVersion{Value: uint64(protocolVersion)}})
+			ProtocolVersion:   &state.ProtocolVersion{Major: uint32(protocolVersion)}})
 	if err != nil {
 		panic(err)
 	}
@@ -73,15 +73,17 @@ func RunGenensis(
 
 func Commit(client ipc.ExecutionEngineServiceClient,
 	prestateHash []byte,
-	effects *ipc.ExecutionEffect) (postStateHash []byte, validators []*ipc.Bond) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	effects *ipc.ExecutionEffect,
+	protocolVersion int) (postStateHash []byte, validators []*ipc.Bond) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	r, err := client.Commit(
 		ctx,
 		&ipc.CommitRequest{
-			PrestateHash: prestateHash,
-			Effects:      effects.GetTransformMap()})
+			PrestateHash:    prestateHash,
+			Effects:         effects.GetTransformMap(),
+			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
 	if err != nil {
 		panic(err)
 	}
@@ -91,15 +93,15 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 	return commitResult.GetPoststateHash(), commitResult.GetBondedValidators()
 }
 
-func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte) bool {
+func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocolVersion int) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	r, err := client.Validate(
 		ctx,
 		&ipc.ValidateRequest{
-			SessionCode: wasmCode,
-			PaymentCode: wasmCode})
+			WasmCode:        wasmCode,
+			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +112,8 @@ func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte) bool {
 func Query(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
 	genensisAddress string,
-	path []string) (bool, *state.Value) {
+	path []string,
+	protocolVersion int) (bool, *state.Value) {
 	key := &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: util.DecodeHexString(genensisAddress)}}}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -119,9 +122,10 @@ func Query(client ipc.ExecutionEngineServiceClient,
 	r, err := client.Query(
 		ctx,
 		&ipc.QueryRequest{
-			StateHash: stateHash,
-			BaseKey:   key,
-			Path:      path})
+			StateHash:       stateHash,
+			BaseKey:         key,
+			Path:            path,
+			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
 	if err != nil {
 		panic(err)
 	}
@@ -138,7 +142,6 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 	strGenensisAddress string,
 	paymentWasmCode []byte,
 	sessionWasmCode []byte,
-	motesTransferredInPayment uint64,
 	protocolVersion int) (effects *ipc.ExecutionEffect) {
 
 	u64Timestamp := uint64(timestamp)
@@ -162,15 +165,14 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 
 	deploys := []*ipc.DeployItem{
 		&ipc.DeployItem{
-			Address:                   genensisAddress,
-			Session:                   &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionWasmCode}}},
-			Payment:                   &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentWasmCode}}},
-			MotesTransferredInPayment: motesTransferredInPayment,
-			GasPrice:                  gasPrice,
-			AuthorizationKeys:         [][]byte{genensisAddress},
-			DeployHash:                headerHash}}
+			Address:           genensisAddress,
+			Session:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionWasmCode}}},
+			Payment:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentWasmCode}}},
+			GasPrice:          gasPrice,
+			AuthorizationKeys: [][]byte{genensisAddress},
+			DeployHash:        headerHash}}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	r, err := client.Execute(
@@ -179,7 +181,7 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 			ParentStateHash: parentStateHash,
 			BlockTime:       u64Timestamp,
 			Deploys:         deploys,
-			ProtocolVersion: &state.ProtocolVersion{Value: uint64(protocolVersion)}})
+			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
 	if err != nil {
 		panic(err)
 	}
