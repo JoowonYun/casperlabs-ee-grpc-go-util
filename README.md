@@ -21,7 +21,7 @@ $ git clone https://github.com/CasperLabs/CasperLabs.git
 
 $ cd execution-engine
 
-$ make build
+$ cargo build
 
 $ ./target/debug/casperlabs-engine-grpc-server ~/.casperlabs/.casper-node.sock
 ```

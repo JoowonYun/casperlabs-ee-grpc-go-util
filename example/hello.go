@@ -14,7 +14,7 @@ func main() {
 	client := grpc.Connect(`/Users/yun/.casperlabs/.casper-node.sock`)
 
 	// laod wasm code
-	mintCode, posCode, cntDefCode, cntCallCode := loadWasmCode()
+	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode := loadWasmCode()
 
 	// validate all wasm code
 	mintResult := grpc.Validate(client, mintCode, 1)
@@ -25,17 +25,38 @@ func main() {
 	println(cntDefResult)
 	cntCallResult := grpc.Validate(client, cntCallCode, 1)
 	println(cntCallResult)
+	mintInstallResult := grpc.Validate(client, mintInstallCode, 1)
+	println(mintInstallResult)
+	posInstallResult := grpc.Validate(client, posInstallCode, 1)
+	println(posInstallResult)
 
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
 	genesisAddress := "d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
+	/* For run_genesis
 	validateAddress1 := "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
 	validates := map[string]string{
-		validateAddress1: "100",
-	}
+		validateAddress1: "100",}
+	*/
+	networkName := "hdac"
+	accounts := map[string][]string{
+		genesisAddress: []string{"50000000", "1000000"}}
+
+	costs := map[string]uint32{
+		"regular":            1,
+		"div-multiplier":     16,
+		"mul-multiplier":     4,
+		"mem-multiplier":     2,
+		"mem-initial-pages":  4096,
+		"mem-grow-per-page":  8192,
+		"mem-copy-per-byte":  1,
+		"max-stack-height":   65536,
+		"opcodes-multiplier": 3,
+		"opcodes-divisor":    8}
 
 	// Run genesis and commit
+	/* Legacy RunGenensis
 	parentStateHash, effects := grpc.RunGenensis(client,
 		genesisAddress,
 		"100",
@@ -44,6 +65,16 @@ func main() {
 		posCode,
 		validates,
 		1)
+	*/
+
+	parentStateHash, effects := grpc.RunGenensisWithChainSpec(client,
+		networkName,
+		0,
+		1,
+		mintInstallCode,
+		posInstallCode,
+		accounts,
+		costs)
 
 	postStateHash, bonds := grpc.Commit(client, rootStateHash, effects, 1)
 	if bytes.Equal(postStateHash, parentStateHash) {
@@ -84,7 +115,7 @@ func main() {
 	println(queryResult2, queryData2.GetIntValue())
 }
 
-func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte) {
+func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte) {
 	mintCode = util.LoadWasmFile("./example/contracts/mint_token.wasm")
 
 	posCode = util.LoadWasmFile("./example/contracts/pos.wasm")
@@ -93,5 +124,9 @@ func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCall
 
 	cntCallCode = util.LoadWasmFile("./example/contracts/countercall.wasm")
 
-	return mintCode, posCode, cntDefCode, cntCallCode
+	mintInstallCode = util.LoadWasmFile("./example/contracts/mint_install.wasm")
+
+	posInstallCode = util.LoadWasmFile("./example/contracts/pos_install.wasm")
+
+	return mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode
 }
