@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"time"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
@@ -11,7 +12,8 @@ import (
 
 func main() {
 	// Connect to ee sock.
-	client := grpc.Connect(`/Users/yun/.casperlabs/.casper-node.sock`)
+	socketPath := os.Getenv("HOME") + `/.casperlabs/.casper-node.sock`
+	client := grpc.Connect(socketPath)
 
 	// laod wasm code
 	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode := loadWasmCode()
