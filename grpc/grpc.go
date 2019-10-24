@@ -78,7 +78,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 	mintInstallCode []byte,
 	posInstallCode []byte,
 	mapAccounts map[string][]string,
-	mapCosts map[string]uint32) (parentStateHash []byte, effects *ipc.ExecutionEffect) {
+	mapCosts map[string]uint32) (parentStateHash []byte, effects *ipc.ExecutionEffect, errMessage string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -113,18 +113,24 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 			Costs:           costs})
 
 	if err != nil {
-		panic(err)
+		errMessage = err.Error()
 	}
 
-	genesisResult := r.GetSuccess()
+	switch r.GetResult().(type) {
+	case *ipc.GenesisResponse_Success:
+		parentStateHash = r.GetSuccess().GetPoststateHash()
+		effects = r.GetSuccess().GetEffect()
+	case *ipc.GenesisResponse_FailedDeploy:
+		errMessage += r.GetFailedDeploy().GetMessage()
+	}
 
-	return genesisResult.PoststateHash, genesisResult.GetEffect()
+	return parentStateHash, effects, errMessage
 }
 
 func Commit(client ipc.ExecutionEngineServiceClient,
 	prestateHash []byte,
 	effects *ipc.ExecutionEffect,
-	protocolVersion *state.ProtocolVersion) (postStateHash []byte, validators []*ipc.Bond) {
+	protocolVersion *state.ProtocolVersion) (postStateHash []byte, validators []*ipc.Bond, errMessage string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -135,15 +141,43 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 			Effects:         effects.GetTransformMap(),
 			ProtocolVersion: protocolVersion})
 	if err != nil {
-		panic(err)
+		errMessage = err.Error()
 	}
 
-	commitResult := r.GetSuccess()
+	switch r.GetResult().(type) {
+	case *ipc.CommitResponse_Success:
+		postStateHash = r.GetSuccess().GetPoststateHash()
+		validators = r.GetSuccess().GetBondedValidators()
+	case *ipc.CommitResponse_MissingPrestate:
+		errMessage = "Missing prestate : " + util.EncodeToHexString(r.GetMissingPrestate().GetHash())
+	case *ipc.CommitResponse_KeyNotFound:
+		errMessage += "Key not Found "
+		var hashValue []byte
+		switch r.GetKeyNotFound().GetValue().(type) {
+		case *state.Key_Address_:
+			errMessage += "(Address)"
+			hashValue = r.GetKeyNotFound().GetAddress().GetAccount()
+		case *state.Key_Hash_:
+			errMessage += "(Hash)"
+			hashValue = r.GetKeyNotFound().GetHash().GetHash()
+		case *state.Key_Uref:
+			errMessage += "(Uref)"
+			hashValue = r.GetKeyNotFound().GetUref().GetUref()
+		case *state.Key_Local_:
+			errMessage += "(Local)"
+			hashValue = r.GetKeyNotFound().GetLocal().GetHash()
+		}
+		errMessage += " : " + util.EncodeToHexString(hashValue)
+	case *ipc.CommitResponse_TypeMismatch:
+		errMessage += "Type missmatch : expected (" + r.GetTypeMismatch().GetExpected() + "), but (" + r.GetTypeMismatch().GetFound() + ")"
+	case *ipc.CommitResponse_FailedTransform:
+		errMessage += "Failed transform : " + r.GetFailedTransform().GetMessage()
+	}
 
-	return commitResult.GetPoststateHash(), commitResult.GetBondedValidators()
+	return postStateHash, validators, errMessage
 }
 
-func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocolVersion *state.ProtocolVersion) bool {
+func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocolVersion *state.ProtocolVersion) (result bool, errMessage string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -153,17 +187,25 @@ func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocol
 			WasmCode:        wasmCode,
 			ProtocolVersion: protocolVersion})
 	if err != nil {
-		panic(err)
+		errMessage = err.Error()
 	}
 
-	return r.GetFailure() == ""
+	switch r.GetResult().(type) {
+	case *ipc.ValidateResponse_Success:
+		result = true
+	case *ipc.ValidateResponse_Failure:
+		result = false
+		errMessage = r.GetFailure()
+	}
+
+	return result, errMessage
 }
 
 func Query(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
 	genensisAddress string,
 	path []string,
-	protocolVersion *state.ProtocolVersion) (bool, *state.Value) {
+	protocolVersion *state.ProtocolVersion) (result *state.Value, errMessage string) {
 	key := &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: util.DecodeHexString(genensisAddress)}}}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -177,12 +219,17 @@ func Query(client ipc.ExecutionEngineServiceClient,
 			Path:            path,
 			ProtocolVersion: protocolVersion})
 	if err != nil {
-		panic(err)
+		errMessage = err.Error()
 	}
 
-	queryResult := r.GetSuccess()
+	switch r.GetResult().(type) {
+	case *ipc.QueryResponse_Success:
+		result = r.GetSuccess()
+	case *ipc.QueryResponse_Failure:
+		errMessage = r.GetFailure()
+	}
 
-	return r.GetFailure() == "", queryResult
+	return result, errMessage
 }
 
 func Execute(client ipc.ExecutionEngineServiceClient,
@@ -192,7 +239,7 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 	strGenensisAddress string,
 	paymentWasmCode []byte,
 	sessionWasmCode []byte,
-	protocolVersion *state.ProtocolVersion) (effects *ipc.ExecutionEffect) {
+	protocolVersion *state.ProtocolVersion) (effects *ipc.ExecutionEffect, errMessage string) {
 
 	u64Timestamp := uint64(timestamp)
 	genensisAddress := util.DecodeHexString(strGenensisAddress)
@@ -233,12 +280,17 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 			Deploys:         deploys,
 			ProtocolVersion: protocolVersion})
 	if err != nil {
-		panic(err)
+		errMessage = err.Error()
 	}
 
-	executeResult := r.GetSuccess()
+	switch r.GetResult().(type) {
+	case *ipc.ExecuteResponse_Success:
+		effects = r.GetSuccess().GetDeployResults()[0].GetExecutionResult().GetEffects()
+	case *ipc.ExecuteResponse_MissingParent:
+		errMessage = "Missing parentstate : " + util.EncodeToHexString(r.GetMissingParent().GetHash())
+	}
 
-	return executeResult.GetDeployResults()[0].GetExecutionResult().Effects
+	return effects, errMessage
 }
 
 func Upgrade(client ipc.ExecutionEngineServiceClient,
@@ -246,7 +298,7 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 	wasmCode []byte,
 	mapCosts map[string]uint32,
 	currentProtocolVersion *state.ProtocolVersion,
-	nextProtocolVersion *state.ProtocolVersion) (postStateHash []byte, effects *ipc.ExecutionEffect) {
+	nextProtocolVersion *state.ProtocolVersion) (postStateHash []byte, effects *ipc.ExecutionEffect, errMessage string) {
 
 	costs := &ipc.ChainSpec_CostTable{
 		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
@@ -277,10 +329,16 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 			UpgradePoint:    upgradePoint,
 			ProtocolVersion: currentProtocolVersion})
 	if err != nil {
-		panic(err)
+		errMessage = err.Error()
 	}
 
-	upgradeResult := r.GetSuccess()
+	switch r.GetResult().(type) {
+	case *ipc.UpgradeResponse_Success:
+		postStateHash = r.GetSuccess().GetPostStateHash()
+		effects = r.GetSuccess().GetEffect()
+	case *ipc.UpgradeResponse_FailedDeploy:
+		errMessage = r.GetFailedDeploy().GetMessage()
+	}
 
-	return upgradeResult.GetPostStateHash(), upgradeResult.GetEffect()
+	return postStateHash, effects, errMessage
 }
