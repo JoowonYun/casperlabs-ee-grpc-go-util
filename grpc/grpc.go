@@ -35,7 +35,7 @@ func RunGenensis(
 	mintCode []byte,
 	posCode []byte,
 	validators map[string]string,
-	protocolVersion int) (parentStateHash []byte, effects *ipc.ExecutionEffect) {
+	protocolVersion *state.ProtocolVersion) (parentStateHash []byte, effects *ipc.ExecutionEffect) {
 	initialMotes := &state.BigInt{Value: strInitialMotes, BitWidth: uint32(512)}
 
 	deployMintCode := &ipc.DeployCode{Code: mintCode}
@@ -61,7 +61,7 @@ func RunGenensis(
 			MintCode:          deployMintCode,
 			ProofOfStakeCode:  deployPosCode,
 			GenesisValidators: genesisValidators,
-			ProtocolVersion:   &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+			ProtocolVersion:   protocolVersion})
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func RunGenensis(
 func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 	name string,
 	timestamp int64,
-	protocolVersion int,
+	protocolVersion *state.ProtocolVersion,
 	mintInstallCode []byte,
 	posInstallCode []byte,
 	mapAccounts map[string][]string,
@@ -106,7 +106,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 		&ipc.ChainSpec_GenesisConfig{
 			Name:            name,
 			Timestamp:       uint64(timestamp),
-			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)},
+			ProtocolVersion: protocolVersion,
 			MintInstaller:   mintInstallCode,
 			PosInstaller:    posInstallCode,
 			Accounts:        accounts,
@@ -124,7 +124,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 func Commit(client ipc.ExecutionEngineServiceClient,
 	prestateHash []byte,
 	effects *ipc.ExecutionEffect,
-	protocolVersion int) (postStateHash []byte, validators []*ipc.Bond) {
+	protocolVersion *state.ProtocolVersion) (postStateHash []byte, validators []*ipc.Bond) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -133,7 +133,7 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 		&ipc.CommitRequest{
 			PrestateHash:    prestateHash,
 			Effects:         effects.GetTransformMap(),
-			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+			ProtocolVersion: protocolVersion})
 	if err != nil {
 		panic(err)
 	}
@@ -143,7 +143,7 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 	return commitResult.GetPoststateHash(), commitResult.GetBondedValidators()
 }
 
-func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocolVersion int) bool {
+func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocolVersion *state.ProtocolVersion) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -151,7 +151,7 @@ func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocol
 		ctx,
 		&ipc.ValidateRequest{
 			WasmCode:        wasmCode,
-			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+			ProtocolVersion: protocolVersion})
 	if err != nil {
 		panic(err)
 	}
@@ -163,7 +163,7 @@ func Query(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
 	genensisAddress string,
 	path []string,
-	protocolVersion int) (bool, *state.Value) {
+	protocolVersion *state.ProtocolVersion) (bool, *state.Value) {
 	key := &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: util.DecodeHexString(genensisAddress)}}}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -175,7 +175,7 @@ func Query(client ipc.ExecutionEngineServiceClient,
 			StateHash:       stateHash,
 			BaseKey:         key,
 			Path:            path,
-			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+			ProtocolVersion: protocolVersion})
 	if err != nil {
 		panic(err)
 	}
@@ -192,7 +192,7 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 	strGenensisAddress string,
 	paymentWasmCode []byte,
 	sessionWasmCode []byte,
-	protocolVersion int) (effects *ipc.ExecutionEffect) {
+	protocolVersion *state.ProtocolVersion) (effects *ipc.ExecutionEffect) {
 
 	u64Timestamp := uint64(timestamp)
 	genensisAddress := util.DecodeHexString(strGenensisAddress)
@@ -231,7 +231,7 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 			ParentStateHash: parentStateHash,
 			BlockTime:       u64Timestamp,
 			Deploys:         deploys,
-			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+			ProtocolVersion: protocolVersion})
 	if err != nil {
 		panic(err)
 	}
@@ -245,7 +245,8 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 	parentStateHash []byte,
 	wasmCode []byte,
 	mapCosts map[string]uint32,
-	protocolVersion int) (postStateHash []byte, effects *ipc.ExecutionEffect) {
+	currentProtocolVersion *state.ProtocolVersion,
+	nextProtocolVersion *state.ProtocolVersion) (postStateHash []byte, effects *ipc.ExecutionEffect) {
 
 	costs := &ipc.ChainSpec_CostTable{
 		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
@@ -262,7 +263,7 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 
 	upgradePoint := &ipc.ChainSpec_UpgradePoint{
 		ActivationPoint:  &ipc.ChainSpec_ActivationPoint{Rank: uint64(1)},
-		ProtocolVersion:  &state.ProtocolVersion{Major: uint32(protocolVersion + 1)},
+		ProtocolVersion:  nextProtocolVersion,
 		UpgradeInstaller: &ipc.DeployCode{Code: wasmCode},
 		NewCosts:         costs}
 
@@ -274,7 +275,7 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 		&ipc.UpgradeRequest{
 			ParentStateHash: parentStateHash,
 			UpgradePoint:    upgradePoint,
-			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+			ProtocolVersion: currentProtocolVersion})
 	if err != nil {
 		panic(err)
 	}

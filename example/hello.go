@@ -11,27 +11,6 @@ import (
 )
 
 func main() {
-	// Connect to ee sock.
-	socketPath := os.Getenv("HOME") + `/.casperlabs/.casper-node.sock`
-	client := grpc.Connect(socketPath)
-
-	// laod wasm code
-	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode := loadWasmCode()
-
-	// validate all wasm code
-	mintResult := grpc.Validate(client, mintCode, 1)
-	println(mintResult)
-	posResult := grpc.Validate(client, posCode, 1)
-	println(posResult)
-	cntDefResult := grpc.Validate(client, cntDefCode, 1)
-	println(cntDefResult)
-	cntCallResult := grpc.Validate(client, cntCallCode, 1)
-	println(cntCallResult)
-	mintInstallResult := grpc.Validate(client, mintInstallCode, 1)
-	println(mintInstallResult)
-	posInstallResult := grpc.Validate(client, posInstallCode, 1)
-	println(posInstallResult)
-
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
@@ -57,6 +36,29 @@ func main() {
 		"opcodes-multiplier": 3,
 		"opcodes-divisor":    8}
 
+	protocolVersion := util.MakeProtocolVersion(1, 0, 0)
+
+	// Connect to ee sock.
+	socketPath := os.Getenv("HOME") + `/.casperlabs/.casper-node.sock`
+	client := grpc.Connect(socketPath)
+
+	// laod wasm code
+	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode := loadWasmCode()
+
+	// validate all wasm code
+	mintResult := grpc.Validate(client, mintCode, protocolVersion)
+	println(mintResult)
+	posResult := grpc.Validate(client, posCode, protocolVersion)
+	println(posResult)
+	cntDefResult := grpc.Validate(client, cntDefCode, protocolVersion)
+	println(cntDefResult)
+	cntCallResult := grpc.Validate(client, cntCallCode, protocolVersion)
+	println(cntCallResult)
+	mintInstallResult := grpc.Validate(client, mintInstallCode, protocolVersion)
+	println(mintInstallResult)
+	posInstallResult := grpc.Validate(client, posInstallCode, protocolVersion)
+	println(posInstallResult)
+
 	// Run genesis and commit
 	/* Legacy RunGenensis
 	parentStateHash, effects := grpc.RunGenensis(client,
@@ -66,19 +68,19 @@ func main() {
 		mintCode,
 		posCode,
 		validates,
-		1)
+		protocolVersion)
 	*/
 
 	parentStateHash, effects := grpc.RunGenensisWithChainSpec(client,
 		networkName,
 		0,
-		1,
+		protocolVersion,
 		mintInstallCode,
 		posInstallCode,
 		accounts,
 		costs)
 
-	postStateHash, bonds := grpc.Commit(client, rootStateHash, effects, 1)
+	postStateHash, bonds := grpc.Commit(client, rootStateHash, effects, protocolVersion)
 	if bytes.Equal(postStateHash, parentStateHash) {
 		rootStateHash = postStateHash
 	}
@@ -86,42 +88,44 @@ func main() {
 	println(bonds[0].String())
 
 	// Run "Counter Define contract"
-	effects2 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, cntDefCode, 1)
+	effects2 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, cntDefCode, protocolVersion)
 
-	postStateHash2, bonds2 := grpc.Commit(client, rootStateHash, effects2, 1)
+	postStateHash2, bonds2 := grpc.Commit(client, rootStateHash, effects2, protocolVersion)
 	rootStateHash = postStateHash2
 	println(util.EncodeToHexString(postStateHash2))
 	println(bonds2[0].String())
 
 	// Run "Counter Call contract"
-	effects3 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, 1)
+	effects3 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, protocolVersion)
 
-	postStateHash3, bonds3 := grpc.Commit(client, rootStateHash, effects3, 1)
+	postStateHash3, bonds3 := grpc.Commit(client, rootStateHash, effects3, protocolVersion)
 	rootStateHash = postStateHash3
 	println(util.EncodeToHexString(postStateHash3))
 	println(bonds3[0].String())
 
 	// Query counter contract.
 	path := []string{"counter", "count"}
-	queryResult1, queryData1 := grpc.Query(client, rootStateHash, genesisAddress, path, 1)
+	queryResult1, queryData1 := grpc.Query(client, rootStateHash, genesisAddress, path, protocolVersion)
 	println(queryResult1, queryData1.GetIntValue())
 
-	effects4 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, 1)
+	effects4 := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, protocolVersion)
 
-	postStateHash4, bonds4 := grpc.Commit(client, rootStateHash, effects4, 1)
+	postStateHash4, bonds4 := grpc.Commit(client, rootStateHash, effects4, protocolVersion)
 	rootStateHash = postStateHash4
 	println(util.EncodeToHexString(postStateHash4))
 	println(bonds4[0].String())
 
-	queryResult2, queryData2 := grpc.Query(client, rootStateHash, genesisAddress, path, 1)
+	queryResult2, queryData2 := grpc.Query(client, rootStateHash, genesisAddress, path, protocolVersion)
 	println(queryResult2, queryData2.GetIntValue())
 
 	// Upgrade costs data..
 	costs["regular"] = 2
-	postStateHash5, effects5 := grpc.Upgrade(client, parentStateHash, cntDefCode, costs, 1)
-	postStateHash6, bonds6 := grpc.Commit(client, postStateHash5, effects5, 2)
+	nextProtocolVersion := util.MakeProtocolVersion(2, 0, 0)
+	postStateHash5, effects5 := grpc.Upgrade(client, parentStateHash, cntDefCode, costs, protocolVersion, nextProtocolVersion)
+	postStateHash6, bonds6 := grpc.Commit(client, postStateHash5, effects5, nextProtocolVersion)
 	if bytes.Equal(postStateHash5, postStateHash6) {
 		rootStateHash = postStateHash5
+		protocolVersion = nextProtocolVersion
 	}
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds6[0].String())

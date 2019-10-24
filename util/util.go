@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 
+	state "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -39,4 +40,8 @@ func Blake2b256(ob []byte) []byte {
 
 	hash.Write(ob)
 	return hash.Sum(nil)
+}
+
+func MakeProtocolVersion(major uint32, minor uint32, patch uint32) *state.ProtocolVersion {
+	return &state.ProtocolVersion{Major: uint32(major), Minor: uint32(minor), Patch: uint32(patch)}
 }
