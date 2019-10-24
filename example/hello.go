@@ -115,6 +115,16 @@ func main() {
 
 	queryResult2, queryData2 := grpc.Query(client, rootStateHash, genesisAddress, path, 1)
 	println(queryResult2, queryData2.GetIntValue())
+
+	// Upgrade costs data..
+	costs["regular"] = 2
+	postStateHash5, effects5 := grpc.Upgrade(client, parentStateHash, cntDefCode, costs, 1)
+	postStateHash6, bonds6 := grpc.Commit(client, postStateHash5, effects5, 2)
+	if bytes.Equal(postStateHash5, postStateHash6) {
+		rootStateHash = postStateHash5
+	}
+	println(util.EncodeToHexString(rootStateHash))
+	println(bonds6[0].String())
 }
 
 func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte) {

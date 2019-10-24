@@ -240,3 +240,46 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 
 	return executeResult.GetDeployResults()[0].GetExecutionResult().Effects
 }
+
+func Upgrade(client ipc.ExecutionEngineServiceClient,
+	parentStateHash []byte,
+	wasmCode []byte,
+	mapCosts map[string]uint32,
+	protocolVersion int) (postStateHash []byte, effects *ipc.ExecutionEffect) {
+
+	costs := &ipc.ChainSpec_CostTable{
+		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
+			Regular:        mapCosts["regular"],
+			Div:            mapCosts["div-multiplier"],
+			Mul:            mapCosts["mul-multiplier"],
+			Mem:            mapCosts["mem-multiplier"],
+			InitialMem:     mapCosts["mem-initial-pages"],
+			GrowMem:        mapCosts["mem-grow-per-page"],
+			Memcpy:         mapCosts["mem-copy-per-byte"],
+			MaxStackHeight: mapCosts["max-stack-height"],
+			OpcodesMul:     mapCosts["opcodes-multiplier"],
+			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
+
+	upgradePoint := &ipc.ChainSpec_UpgradePoint{
+		ActivationPoint:  &ipc.ChainSpec_ActivationPoint{Rank: uint64(1)},
+		ProtocolVersion:  &state.ProtocolVersion{Major: uint32(protocolVersion + 1)},
+		UpgradeInstaller: &ipc.DeployCode{Code: wasmCode},
+		NewCosts:         costs}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	r, err := client.Upgrade(
+		ctx,
+		&ipc.UpgradeRequest{
+			ParentStateHash: parentStateHash,
+			UpgradePoint:    upgradePoint,
+			ProtocolVersion: &state.ProtocolVersion{Major: uint32(protocolVersion)}})
+	if err != nil {
+		panic(err)
+	}
+
+	upgradeResult := r.GetSuccess()
+
+	return upgradeResult.GetPostStateHash(), upgradeResult.GetEffect()
+}
