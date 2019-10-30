@@ -238,15 +238,17 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 	gasPrice uint64,
 	strGenensisAddress string,
 	paymentWasmCode []byte,
+	paymentArgs []byte,
 	sessionWasmCode []byte,
+	sessionArgs []byte,
 	protocolVersion *state.ProtocolVersion) (effects *ipc.ExecutionEffect, errMessage string) {
 
 	u64Timestamp := uint64(timestamp)
 	genensisAddress := util.DecodeHexString(strGenensisAddress)
 
 	deployBody := &cons.Deploy_Body{
-		Session: &cons.Deploy_Code{Contract: &cons.Deploy_Code_Wasm{Wasm: sessionWasmCode}},
-		Payment: &cons.Deploy_Code{Contract: &cons.Deploy_Code_Wasm{Wasm: paymentWasmCode}}}
+		Session: &cons.Deploy_Code{Contract: &cons.Deploy_Code_Wasm{Wasm: sessionWasmCode}, AbiArgs: sessionArgs},
+		Payment: &cons.Deploy_Code{Contract: &cons.Deploy_Code_Wasm{Wasm: paymentWasmCode}, AbiArgs: paymentArgs}}
 
 	marshalDeployBody, err := proto.Marshal(deployBody)
 	bodyHash := util.Blake2b256(marshalDeployBody)
@@ -263,8 +265,8 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 	deploys := []*ipc.DeployItem{
 		&ipc.DeployItem{
 			Address:           genensisAddress,
-			Session:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionWasmCode}}},
-			Payment:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentWasmCode}}},
+			Session:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionWasmCode, Args: sessionArgs}}},
+			Payment:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentWasmCode, Args: paymentArgs}}},
 			GasPrice:          gasPrice,
 			AuthorizationKeys: [][]byte{genensisAddress},
 			DeployHash:        headerHash}}

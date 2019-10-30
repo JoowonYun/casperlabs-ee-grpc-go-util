@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"math/big"
 	"os"
 	"time"
 
@@ -43,26 +44,32 @@ func main() {
 	client := grpc.Connect(socketPath)
 
 	// laod wasm code
-	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode := loadWasmCode()
+	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode := loadWasmCode()
 
 	// validate all wasm code
 	mintResult, errMessage := grpc.Validate(client, mintCode, protocolVersion)
-	println(mintResult)
+	println(mintResult, len(mintCode))
 	println(errMessage)
 	posResult, errMessage := grpc.Validate(client, posCode, protocolVersion)
-	println(posResult)
+	println(posResult, len(posCode))
 	println(errMessage)
 	cntDefResult, errMessage := grpc.Validate(client, cntDefCode, protocolVersion)
-	println(cntDefResult)
+	println(cntDefResult, len(cntDefCode))
 	println(errMessage)
 	cntCallResult, errMessage := grpc.Validate(client, cntCallCode, protocolVersion)
-	println(cntCallResult)
+	println(cntCallResult, len(cntCallCode))
 	println(errMessage)
 	mintInstallResult, errMessage := grpc.Validate(client, mintInstallCode, protocolVersion)
-	println(mintInstallResult)
+	println(mintInstallResult, len(mintInstallCode))
 	println(errMessage)
 	posInstallResult, errMessage := grpc.Validate(client, posInstallCode, protocolVersion)
-	println(posInstallResult)
+	println(posInstallResult, len(posInstallCode))
+	println(errMessage)
+	transferToAccountResult, errMessage := grpc.Validate(client, transferToAccountCode, protocolVersion)
+	println(transferToAccountResult, len(transferToAccountCode))
+	println(errMessage)
+	standardPaymentResult, errMessage := grpc.Validate(client, standardPaymentCode, protocolVersion)
+	println(standardPaymentResult, len(standardPaymentCode))
 	println(errMessage)
 
 	// Run genesis and commit
@@ -94,7 +101,7 @@ func main() {
 	println(bonds[0].String())
 
 	// Run "Counter Define contract"
-	effects2, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, cntDefCode, protocolVersion)
+	effects2, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, []byte{}, cntDefCode, []byte{}, protocolVersion)
 
 	postStateHash2, bonds2, errMessage := grpc.Commit(client, rootStateHash, effects2, protocolVersion)
 	rootStateHash = postStateHash2
@@ -102,7 +109,7 @@ func main() {
 	println(bonds2[0].String())
 
 	// Run "Counter Call contract"
-	effects3, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, protocolVersion)
+	effects3, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, protocolVersion)
 
 	postStateHash3, bonds3, errMessage := grpc.Commit(client, rootStateHash, effects3, protocolVersion)
 	rootStateHash = postStateHash3
@@ -115,7 +122,7 @@ func main() {
 	println(queryResult1.GetIntValue())
 	println(errMessage)
 
-	effects4, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, cntCallCode, protocolVersion)
+	effects4, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, protocolVersion)
 
 	postStateHash4, bonds4, errMessage := grpc.Commit(client, rootStateHash, effects4, protocolVersion)
 	rootStateHash = postStateHash4
@@ -126,20 +133,30 @@ func main() {
 	println(queryResult2.GetIntValue())
 	println(errMessage)
 
+	// Run "Send transaction"
+	sessionAbi := util.MakeArgsTransferToAccount("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915", uint64(10))
+	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(1))
+	effects5, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, standardPaymentCode, paymentAbi, transferToAccountCode, sessionAbi, protocolVersion)
+
+	postStateHash5, bonds5, errMessage := grpc.Commit(client, rootStateHash, effects5, protocolVersion)
+	rootStateHash = postStateHash5
+	println(util.EncodeToHexString(postStateHash5))
+	println(bonds5[0].String())
+
 	// Upgrade costs data..
 	costs["regular"] = 2
 	nextProtocolVersion := util.MakeProtocolVersion(2, 0, 0)
-	postStateHash5, effects5, errMessage := grpc.Upgrade(client, parentStateHash, cntDefCode, costs, protocolVersion, nextProtocolVersion)
-	postStateHash6, bonds6, errMessage := grpc.Commit(client, postStateHash5, effects5, nextProtocolVersion)
-	if bytes.Equal(postStateHash5, postStateHash6) {
-		rootStateHash = postStateHash5
+	postStateHash6, effects6, errMessage := grpc.Upgrade(client, parentStateHash, cntDefCode, costs, protocolVersion, nextProtocolVersion)
+	postStateHash7, bonds6, errMessage := grpc.Commit(client, postStateHash6, effects6, nextProtocolVersion)
+	if bytes.Equal(postStateHash6, postStateHash7) {
+		rootStateHash = postStateHash6
 		protocolVersion = nextProtocolVersion
 	}
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds6[0].String())
 }
 
-func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte) {
+func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte, transferToAccountCode []byte, standardPaymentCode []byte) {
 	mintCode = util.LoadWasmFile("./example/contracts/mint_token.wasm")
 
 	posCode = util.LoadWasmFile("./example/contracts/pos.wasm")
@@ -152,5 +169,9 @@ func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCall
 
 	posInstallCode = util.LoadWasmFile("./example/contracts/pos_install.wasm")
 
-	return mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode
+	transferToAccountCode = util.LoadWasmFile("./example/contracts/transfer_to_account.wasm")
+
+	standardPaymentCode = util.LoadWasmFile("./example/contracts/standard_payment.wasm")
+
+	return mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode
 }
