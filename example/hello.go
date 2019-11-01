@@ -118,7 +118,7 @@ func main() {
 
 	// Query counter contract.
 	path := []string{"counter", "count"}
-	queryResult1, errMessage := grpc.Query(client, rootStateHash, genesisAddress, path, protocolVersion)
+	queryResult1, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
 	println(queryResult1.GetIntValue())
 	println(errMessage)
 
@@ -129,8 +129,12 @@ func main() {
 	println(util.EncodeToHexString(postStateHash4))
 	println(bonds4[0].String())
 
-	queryResult2, errMessage := grpc.Query(client, rootStateHash, genesisAddress, path, protocolVersion)
+	queryResult2, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
 	println(queryResult2.GetIntValue())
+	println(errMessage)
+
+	queryResult3, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	println(genesisAddress, ": ", queryResult3)
 	println(errMessage)
 
 	// Run "Send transaction"
@@ -142,6 +146,14 @@ func main() {
 	rootStateHash = postStateHash5
 	println(util.EncodeToHexString(postStateHash5))
 	println(bonds5[0].String())
+
+	queryResult4, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	println(genesisAddress, ": ", queryResult4)
+	println(errMessage)
+
+	queryResult5, errMessage := grpc.QueryBlanace(client, rootStateHash, "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915", protocolVersion)
+	println("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915: ", queryResult5)
+	println(errMessage)
 
 	// Upgrade costs data..
 	costs["regular"] = 2

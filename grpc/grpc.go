@@ -203,12 +203,24 @@ func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocol
 
 func Query(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
-	genensisAddress string,
+	keyType string,
+	keyData string,
 	path []string,
 	protocolVersion *state.ProtocolVersion) (result *state.Value, errMessage string) {
-	key := &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: util.DecodeHexString(genensisAddress)}}}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	var key *state.Key
+	switch keyType {
+	case "address":
+		key = &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: util.DecodeHexString(keyData)}}}
+	case "local":
+		key = &state.Key{Value: &state.Key_Local_{Local: &state.Key_Local{Hash: util.DecodeHexString(keyData)}}}
+	case "uref":
+		key = &state.Key{Value: &state.Key_Uref{Uref: &state.Key_URef{Uref: util.DecodeHexString(keyData)}}}
+	case "hash":
+		key = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: util.DecodeHexString(keyData)}}}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	r, err := client.Query(
@@ -343,4 +355,41 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 	}
 
 	return postStateHash, effects, errMessage
+}
+
+func QueryBlanace(client ipc.ExecutionEngineServiceClient,
+	stateHash []byte,
+	address string,
+	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
+
+	res, errMessage := Query(client, stateHash, "address", address, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	purseID := res.GetAccount().GetPurseId().GetUref()
+	namedKeys := res.GetAccount().GetNamedKeys()
+	var mintUref []byte
+	for _, value := range namedKeys {
+		if value.GetName() == "mint" {
+			mintUref = value.GetKey().GetUref().GetUref()
+			break
+		}
+	}
+
+	localSrc := util.EncodeToHexString(mintUref) + util.EncodeToHexString(util.AbiBytesToBytes(purseID))
+	localBytes := util.Blake2b256(util.DecodeHexString(localSrc))
+
+	res, errMessage = Query(client, stateHash, "local", util.EncodeToHexString(localBytes), []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	uref := res.GetKey().GetUref().GetUref()
+	res, errMessage = Query(client, stateHash, "uref", util.EncodeToHexString(uref), []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	return res.GetBigInt().GetValue(), errMessage
 }
