@@ -61,3 +61,12 @@ func TestAbiMakeArgs(t *testing.T) {
 	})
 	assert.Equal(t, res, []byte{3, 0, 0, 0, 4, 0, 0, 0, 10, 0, 0, 0, 8, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 12, 0, 0, 0, 8, 0, 0, 0, 147, 68, 51, 37, 29, 6, 244, 90})
 }
+
+func TestAbiOptionToBytes(t *testing.T) {
+
+	res := AbiOptionToBytes([]byte{})
+	assert.Equal(t, []byte{0}, res)
+
+	res = AbiOptionToBytes(AbiUint64ToBytes(uint64(10)))
+	assert.Equal(t, []byte{1, 10, 0, 0, 0, 0, 0, 0, 0}, res)
+}

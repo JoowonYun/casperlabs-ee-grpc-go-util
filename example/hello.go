@@ -44,7 +44,7 @@ func main() {
 	client := grpc.Connect(socketPath)
 
 	// laod wasm code
-	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode := loadWasmCode()
+	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode := loadWasmCode()
 
 	// validate all wasm code
 	mintResult, errMessage := grpc.Validate(client, mintCode, protocolVersion)
@@ -70,6 +70,12 @@ func main() {
 	println(errMessage)
 	standardPaymentResult, errMessage := grpc.Validate(client, standardPaymentCode, protocolVersion)
 	println(standardPaymentResult, len(standardPaymentCode))
+	println(errMessage)
+	bondingResult, errMessage := grpc.Validate(client, bondingCode, protocolVersion)
+	println(bondingResult, len(bondingCode))
+	println(errMessage)
+	unbondingResult, errMessage := grpc.Validate(client, unbondingCode, protocolVersion)
+	println(unbondingResult, len(unbondingCode))
 	println(errMessage)
 
 	// Run genesis and commit
@@ -155,20 +161,36 @@ func main() {
 	println("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915: ", queryResult5)
 	println(errMessage)
 
+	// bonding
+	bondingAbi := util.MakeArgsBonding(uint64(10))
+	effects6, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, standardPaymentCode, paymentAbi, bondingCode, bondingAbi, protocolVersion)
+	postStateHash6, bonds6, errMessage := grpc.Commit(client, rootStateHash, effects6, protocolVersion)
+	rootStateHash = postStateHash6
+	println(util.EncodeToHexString(rootStateHash))
+	println(bonds6[0].String())
+
+	// unbonding
+	ubbondingAbi := util.MakeArgsUnBonding(uint64(100))
+	effects7, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, standardPaymentCode, paymentAbi, unbondingCode, ubbondingAbi, protocolVersion)
+	postStateHash7, bonds7, errMessage := grpc.Commit(client, rootStateHash, effects7, protocolVersion)
+	rootStateHash = postStateHash7
+	println(util.EncodeToHexString(rootStateHash))
+	println(bonds7[0].String())
+
 	// Upgrade costs data..
 	costs["regular"] = 2
 	nextProtocolVersion := util.MakeProtocolVersion(2, 0, 0)
-	postStateHash6, effects6, errMessage := grpc.Upgrade(client, parentStateHash, cntDefCode, costs, protocolVersion, nextProtocolVersion)
-	postStateHash7, bonds6, errMessage := grpc.Commit(client, postStateHash6, effects6, nextProtocolVersion)
-	if bytes.Equal(postStateHash6, postStateHash7) {
-		rootStateHash = postStateHash6
+	postStateHash8, effects8, errMessage := grpc.Upgrade(client, rootStateHash, cntDefCode, costs, protocolVersion, nextProtocolVersion)
+	postStateHash9, bonds8, errMessage := grpc.Commit(client, rootStateHash, effects8, nextProtocolVersion)
+	if bytes.Equal(postStateHash8, postStateHash9) {
+		rootStateHash = postStateHash8
 		protocolVersion = nextProtocolVersion
 	}
 	println(util.EncodeToHexString(rootStateHash))
-	println(bonds6[0].String())
+	println(bonds8[0].String())
 }
 
-func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte, transferToAccountCode []byte, standardPaymentCode []byte) {
+func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte, transferToAccountCode []byte, standardPaymentCode []byte, bondingCode []byte, unbondingCode []byte) {
 	mintCode = util.LoadWasmFile("./example/contracts/mint_token.wasm")
 
 	posCode = util.LoadWasmFile("./example/contracts/pos.wasm")
@@ -185,5 +207,9 @@ func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCall
 
 	standardPaymentCode = util.LoadWasmFile("./example/contracts/standard_payment.wasm")
 
-	return mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode
+	bondingCode = util.LoadWasmFile("./example/contracts/bonding.wasm")
+
+	unbondingCode = util.LoadWasmFile("./example/contracts/unbonding.wasm")
+
+	return mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode
 }

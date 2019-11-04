@@ -67,6 +67,16 @@ func AbiBytesToBytes(src []byte) []byte {
 	return res
 }
 
+func AbiOptionToBytes(src []byte) []byte {
+	res := make([]byte, 1)
+	if len(src) > 0 {
+		res[0] = 1
+		res = append(res, src...)
+	}
+
+	return res
+}
+
 func AbiStringToBytes(src string) []byte {
 	res := make([]byte, 4)
 	binary.LittleEndian.PutUint32(res, uint32(len(src)))
@@ -119,4 +129,16 @@ func MakeArgsStandardPayment(amount *big.Int) []byte {
 	paymentAbiList := [][]byte{AbiBigIntTobytes(amount)}
 	paymentAbi := AbiMakeArgs(paymentAbiList)
 	return paymentAbi
+}
+
+func MakeArgsBonding(amount uint64) []byte {
+	abiList := [][]byte{AbiUint64ToBytes(amount)}
+	abi := AbiMakeArgs(abiList)
+	return abi
+}
+
+func MakeArgsUnBonding(amount uint64) []byte {
+	abiList := [][]byte{AbiOptionToBytes(AbiUint64ToBytes(amount))}
+	abi := AbiMakeArgs(abiList)
+	return abi
 }
