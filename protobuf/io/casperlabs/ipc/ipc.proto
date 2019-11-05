@@ -3,7 +3,7 @@ option go_package = "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/c
 package io.casperlabs.ipc;
 
 import "io/casperlabs/casper/consensus/state/state.proto";
-import "io/casperlabs/ipc/transforms.proto";
+import "io/casperlabs/ipc/transforms/transforms.proto";
 
 message DeployCode {
   bytes code = 1; // wasm byte code
@@ -92,7 +92,7 @@ message RootNotFound {
 
 message CommitRequest {
     bytes prestate_hash = 1;
-    repeated TransformEntry effects = 2;
+    repeated io.casperlabs.ipc.transforms.TransformEntry effects = 2;
     io.casperlabs.casper.consensus.state.ProtocolVersion protocol_version = 3;
 }
 
@@ -106,7 +106,7 @@ message CommitResponse {
         CommitResult success = 1;
         RootNotFound missing_prestate = 2;
         io.casperlabs.casper.consensus.state.Key key_not_found = 3;
-        TypeMismatch type_mismatch = 4;
+        io.casperlabs.ipc.transforms.TypeMismatch type_mismatch = 4;
         PostEffectsError failed_transform = 5;
     }
 }
@@ -160,7 +160,7 @@ message OpEntry {
 // op_map and transform_map should be of equal lengths
 message ExecutionEffect {
     repeated OpEntry op_map = 1;
-    repeated TransformEntry transform_map = 2;
+    repeated io.casperlabs.ipc.transforms.TransformEntry transform_map = 2;
 }
 
 message DeployError {

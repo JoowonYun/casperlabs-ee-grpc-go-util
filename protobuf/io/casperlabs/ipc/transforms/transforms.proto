@@ -1,6 +1,6 @@
 syntax = "proto3";
-option go_package = "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc";
-package io.casperlabs.ipc;
+option go_package = "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms";
+package io.casperlabs.ipc.transforms;
 
 import "io/casperlabs/casper/consensus/state/state.proto";
 

@@ -4,13 +4,12 @@ import (
 	"context"
 	"time"
 
-	cons "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
-	state "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
-	ipc "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 
-	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 )
 
@@ -35,7 +34,7 @@ func RunGenensis(
 	mintCode []byte,
 	posCode []byte,
 	validators map[string]string,
-	protocolVersion *state.ProtocolVersion) (parentStateHash []byte, effects *ipc.ExecutionEffect) {
+	protocolVersion *state.ProtocolVersion) (parentStateHash []byte, effects []*transforms.TransformEntry) {
 	initialMotes := &state.BigInt{Value: strInitialMotes, BitWidth: uint32(512)}
 
 	deployMintCode := &ipc.DeployCode{Code: mintCode}
@@ -68,7 +67,7 @@ func RunGenensis(
 
 	genesisResult := r.GetSuccess()
 
-	return genesisResult.PoststateHash, genesisResult.GetEffect()
+	return genesisResult.PoststateHash, genesisResult.GetEffect().GetTransformMap()
 }
 
 func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
@@ -78,7 +77,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 	mintInstallCode []byte,
 	posInstallCode []byte,
 	mapAccounts map[string][]string,
-	mapCosts map[string]uint32) (parentStateHash []byte, effects *ipc.ExecutionEffect, errMessage string) {
+	mapCosts map[string]uint32) (parentStateHash []byte, effects []*transforms.TransformEntry, errMessage string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -119,7 +118,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 	switch r.GetResult().(type) {
 	case *ipc.GenesisResponse_Success:
 		parentStateHash = r.GetSuccess().GetPoststateHash()
-		effects = r.GetSuccess().GetEffect()
+		effects = r.GetSuccess().GetEffect().GetTransformMap()
 	case *ipc.GenesisResponse_FailedDeploy:
 		errMessage += r.GetFailedDeploy().GetMessage()
 	}
@@ -129,7 +128,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 
 func Commit(client ipc.ExecutionEngineServiceClient,
 	prestateHash []byte,
-	effects *ipc.ExecutionEffect,
+	effects []*transforms.TransformEntry,
 	protocolVersion *state.ProtocolVersion) (postStateHash []byte, validators []*ipc.Bond, errMessage string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -138,7 +137,7 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 		ctx,
 		&ipc.CommitRequest{
 			PrestateHash:    prestateHash,
-			Effects:         effects.GetTransformMap(),
+			Effects:         effects,
 			ProtocolVersion: protocolVersion})
 	if err != nil {
 		errMessage = err.Error()
@@ -246,42 +245,11 @@ func Query(client ipc.ExecutionEngineServiceClient,
 
 func Execute(client ipc.ExecutionEngineServiceClient,
 	parentStateHash []byte,
-	timestamp int64,
-	gasPrice uint64,
-	strGenensisAddress string,
-	paymentWasmCode []byte,
-	paymentArgs []byte,
-	sessionWasmCode []byte,
-	sessionArgs []byte,
-	protocolVersion *state.ProtocolVersion) (effects *ipc.ExecutionEffect, errMessage string) {
+	int64timestamp int64,
+	deploys []*ipc.DeployItem,
+	protocolVersion *state.ProtocolVersion) (effects []*transforms.TransformEntry, errMessage string) {
 
-	u64Timestamp := uint64(timestamp)
-	genensisAddress := util.DecodeHexString(strGenensisAddress)
-
-	deployBody := &cons.Deploy_Body{
-		Session: &cons.Deploy_Code{Contract: &cons.Deploy_Code_Wasm{Wasm: sessionWasmCode}, AbiArgs: sessionArgs},
-		Payment: &cons.Deploy_Code{Contract: &cons.Deploy_Code_Wasm{Wasm: paymentWasmCode}, AbiArgs: paymentArgs}}
-
-	marshalDeployBody, err := proto.Marshal(deployBody)
-	bodyHash := util.Blake2b256(marshalDeployBody)
-
-	deployHeader := &cons.Deploy_Header{
-		AccountPublicKey: genensisAddress,
-		Timestamp:        u64Timestamp,
-		GasPrice:         gasPrice,
-		BodyHash:         bodyHash}
-
-	marshalDeployHeader, err := proto.Marshal(deployHeader)
-	headerHash := util.Blake2b256(marshalDeployHeader)
-
-	deploys := []*ipc.DeployItem{
-		&ipc.DeployItem{
-			Address:           genensisAddress,
-			Session:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionWasmCode, Args: sessionArgs}}},
-			Payment:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentWasmCode, Args: paymentArgs}}},
-			GasPrice:          gasPrice,
-			AuthorizationKeys: [][]byte{genensisAddress},
-			DeployHash:        headerHash}}
+	timestamp := uint64(int64timestamp)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -290,7 +258,7 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 		ctx,
 		&ipc.ExecuteRequest{
 			ParentStateHash: parentStateHash,
-			BlockTime:       u64Timestamp,
+			BlockTime:       timestamp,
 			Deploys:         deploys,
 			ProtocolVersion: protocolVersion})
 	if err != nil {
@@ -299,7 +267,9 @@ func Execute(client ipc.ExecutionEngineServiceClient,
 
 	switch r.GetResult().(type) {
 	case *ipc.ExecuteResponse_Success:
-		effects = r.GetSuccess().GetDeployResults()[0].GetExecutionResult().GetEffects()
+		for _, res := range r.GetSuccess().GetDeployResults() {
+			effects = append(effects, res.GetExecutionResult().GetEffects().GetTransformMap()...)
+		}
 	case *ipc.ExecuteResponse_MissingParent:
 		errMessage = "Missing parentstate : " + util.EncodeToHexString(r.GetMissingParent().GetHash())
 	}
@@ -312,7 +282,7 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 	wasmCode []byte,
 	mapCosts map[string]uint32,
 	currentProtocolVersion *state.ProtocolVersion,
-	nextProtocolVersion *state.ProtocolVersion) (postStateHash []byte, effects *ipc.ExecutionEffect, errMessage string) {
+	nextProtocolVersion *state.ProtocolVersion) (postStateHash []byte, effects []*transforms.TransformEntry, errMessage string) {
 
 	costs := &ipc.ChainSpec_CostTable{
 		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
@@ -349,7 +319,7 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 	switch r.GetResult().(type) {
 	case *ipc.UpgradeResponse_Success:
 		postStateHash = r.GetSuccess().GetPostStateHash()
-		effects = r.GetSuccess().GetEffect()
+		effects = r.GetSuccess().GetEffect().GetTransformMap()
 	case *ipc.UpgradeResponse_FailedDeploy:
 		errMessage = r.GetFailedDeploy().GetMessage()
 	}

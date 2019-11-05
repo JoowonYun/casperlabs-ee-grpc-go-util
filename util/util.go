@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"math/big"
 
-	state "github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
+	"github.com/golang/protobuf/proto"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -141,4 +144,50 @@ func MakeArgsUnBonding(amount uint64) []byte {
 	abiList := [][]byte{AbiOptionToBytes(AbiUint64ToBytes(amount))}
 	abi := AbiMakeArgs(abiList)
 	return abi
+}
+
+func MakeDeploy(
+	strFromAddress string,
+	sessionCode []byte,
+	sessionArgs []byte,
+	paymentCode []byte,
+	paymentArgs []byte,
+	gasPrice uint64,
+	int64Timestamp int64) (deploy *ipc.DeployItem) {
+	fromAddress := DecodeHexString(strFromAddress)
+	timestamp := uint64(int64Timestamp)
+
+	deployBody := &consensus.Deploy_Body{
+		Session: &consensus.Deploy_Code{Contract: &consensus.Deploy_Code_Wasm{Wasm: sessionCode}, AbiArgs: sessionArgs},
+		Payment: &consensus.Deploy_Code{Contract: &consensus.Deploy_Code_Wasm{Wasm: paymentCode}, AbiArgs: paymentArgs}}
+
+	marshalDeployBody, _ := proto.Marshal(deployBody)
+	bodyHash := Blake2b256(marshalDeployBody)
+
+	deployHeader := &consensus.Deploy_Header{
+		AccountPublicKey: fromAddress,
+		Timestamp:        timestamp,
+		GasPrice:         gasPrice,
+		BodyHash:         bodyHash}
+
+	marshalDeployHeader, _ := proto.Marshal(deployHeader)
+	headerHash := Blake2b256(marshalDeployHeader)
+
+	deploy = &ipc.DeployItem{
+		Address:           fromAddress,
+		Session:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionCode, Args: sessionArgs}}},
+		Payment:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentCode, Args: paymentArgs}}},
+		GasPrice:          gasPrice,
+		AuthorizationKeys: [][]byte{fromAddress},
+		DeployHash:        headerHash}
+
+	return deploy
+}
+
+func MakeInitDeploys() []*ipc.DeployItem {
+	return []*ipc.DeployItem{}
+}
+
+func AddDeploy(deploys []*ipc.DeployItem, deploy *ipc.DeployItem) []*ipc.DeployItem {
+	return append(deploys, deploy)
 }

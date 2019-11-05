@@ -107,7 +107,14 @@ func main() {
 	println(bonds[0].String())
 
 	// Run "Counter Define contract"
-	effects2, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntDefCode, []byte{}, cntDefCode, []byte{}, protocolVersion)
+	timestamp := time.Now().Unix()
+	deploy1 := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, cntDefCode, []byte{}, uint64(10), timestamp)
+	deploy2 := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, cntDefCode, []byte{}, uint64(10), timestamp)
+	deploys := util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy1)
+	deploys = util.AddDeploy(deploys, deploy2)
+
+	effects2, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 
 	postStateHash2, bonds2, errMessage := grpc.Commit(client, rootStateHash, effects2, protocolVersion)
 	rootStateHash = postStateHash2
@@ -115,7 +122,11 @@ func main() {
 	println(bonds2[0].String())
 
 	// Run "Counter Call contract"
-	effects3, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, protocolVersion)
+	timestamp = time.Now().Unix()
+	deploy := util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, uint64(10), timestamp)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	effects3, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 
 	postStateHash3, bonds3, errMessage := grpc.Commit(client, rootStateHash, effects3, protocolVersion)
 	rootStateHash = postStateHash3
@@ -128,7 +139,11 @@ func main() {
 	println(queryResult1.GetIntValue())
 	println(errMessage)
 
-	effects4, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, protocolVersion)
+	timestamp = time.Now().Unix()
+	deploy = util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, uint64(10), timestamp)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	effects4, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 
 	postStateHash4, bonds4, errMessage := grpc.Commit(client, rootStateHash, effects4, protocolVersion)
 	rootStateHash = postStateHash4
@@ -144,9 +159,13 @@ func main() {
 	println(errMessage)
 
 	// Run "Send transaction"
+	timestamp = time.Now().Unix()
 	sessionAbi := util.MakeArgsTransferToAccount("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915", uint64(10))
 	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(1))
-	effects5, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, standardPaymentCode, paymentAbi, transferToAccountCode, sessionAbi, protocolVersion)
+	deploy = util.MakeDeploy(genesisAddress, transferToAccountCode, sessionAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	effects5, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 
 	postStateHash5, bonds5, errMessage := grpc.Commit(client, rootStateHash, effects5, protocolVersion)
 	rootStateHash = postStateHash5
@@ -162,16 +181,24 @@ func main() {
 	println(errMessage)
 
 	// bonding
+	timestamp = time.Now().Unix()
 	bondingAbi := util.MakeArgsBonding(uint64(10))
-	effects6, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, standardPaymentCode, paymentAbi, bondingCode, bondingAbi, protocolVersion)
+	deploy = util.MakeDeploy(genesisAddress, bondingCode, bondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	effects6, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 	postStateHash6, bonds6, errMessage := grpc.Commit(client, rootStateHash, effects6, protocolVersion)
 	rootStateHash = postStateHash6
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds6[0].String())
 
 	// unbonding
+	timestamp = time.Now().Unix()
 	ubbondingAbi := util.MakeArgsUnBonding(uint64(100))
-	effects7, errMessage := grpc.Execute(client, rootStateHash, time.Now().Unix(), uint64(10), genesisAddress, standardPaymentCode, paymentAbi, unbondingCode, ubbondingAbi, protocolVersion)
+	deploy = util.MakeDeploy(genesisAddress, unbondingCode, ubbondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	effects7, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 	postStateHash7, bonds7, errMessage := grpc.Commit(client, rootStateHash, effects7, protocolVersion)
 	rootStateHash = postStateHash7
 	println(util.EncodeToHexString(rootStateHash))
