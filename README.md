@@ -1,14 +1,10 @@
-#   Casperlabs-ee-grpc-go-util  [![Build Status](https://travis-ci.org/hdac-io/casperlabs-ee-grpc-go-util.svg?branch=master)](https://travis-ci.org/hdac-io/casperlabs-ee-grpc-go-util)
+#   Casperlabs-ee-grpc-go-util  [![Build Status](https://travis-ci.com/hdac-io/casperlabs-ee-grpc-go-util.svg?token=GLBy52vf7tteTZjpJNu9&branch=master)
 
 
 This module is for using GRPC and UTIL in GO to utilize Casperlabs Execution-Engine.
 
 
 ## Install
-- For use go module, add to environment variable.
-```bash
-$ export GO111MODULE=on
-```
 - Download to module in $GOPATH
 ```bash
 $ go get -u github.com/hdac-io/casperlabs-ee-grpc-go-util
