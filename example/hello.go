@@ -16,14 +16,9 @@ func main() {
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
 	genesisAddress := "d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
-	/* For run_genesis
-	validateAddress1 := "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
-	validates := map[string]string{
-		validateAddress1: "100",}
-	*/
-	networkName := "hdac"
+	chainName := "hdac"
 	accounts := map[string][]string{
-		genesisAddress: []string{"50000000", "1000000"}}
+		genesisAddress: []string{"500000000", "1000000"}}
 
 	costs := map[string]uint32{
 		"regular":            1,
@@ -78,20 +73,8 @@ func main() {
 	println(unbondingResult, len(unbondingCode))
 	println(errMessage)
 
-	// Run genesis and commit
-	/* Legacy RunGenensis
-	parentStateHash, effects, errMesage := grpc.RunGenensis(client,
-		genesisAddress,
-		"100",
-		0,
-		mintCode,
-		posCode,
-		validates,
-		protocolVersion)
-	*/
-
-	parentStateHash, effects, errMessage := grpc.RunGenensisWithChainSpec(client,
-		networkName,
+	parentStateHash, effects, errMessage := grpc.RunGenesis(client,
+		chainName,
 		0,
 		protocolVersion,
 		mintInstallCode,
@@ -106,13 +89,16 @@ func main() {
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds[0].String())
 
+	queryResult, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	println(genesisAddress, ": ", queryResult)
+	println(errMessage)
+
 	// Run "Counter Define contract"
 	timestamp := time.Now().Unix()
-	deploy1 := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, cntDefCode, []byte{}, uint64(10), timestamp)
-	deploy2 := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, cntDefCode, []byte{}, uint64(10), timestamp)
+	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(200000000))
+	deploy := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
-	deploys = util.AddDeploy(deploys, deploy1)
-	deploys = util.AddDeploy(deploys, deploy2)
+	deploys = util.AddDeploy(deploys, deploy)
 
 	effects2, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 
@@ -121,9 +107,13 @@ func main() {
 	println(util.EncodeToHexString(postStateHash2))
 	println(bonds2[0].String())
 
+	queryResult, errMessage = grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	println(genesisAddress, ": ", queryResult)
+	println(errMessage)
+
 	// Run "Counter Call contract"
 	timestamp = time.Now().Unix()
-	deploy := util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, uint64(10), timestamp)
+	deploy = util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	effects3, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -139,8 +129,12 @@ func main() {
 	println(queryResult1.GetIntValue())
 	println(errMessage)
 
+	queryResult, errMessage = grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	println(genesisAddress, ": ", queryResult)
+	println(errMessage)
+
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, cntCallCode, []byte{}, uint64(10), timestamp)
+	deploy = util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	effects4, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -161,8 +155,7 @@ func main() {
 	// Run "Send transaction"
 	timestamp = time.Now().Unix()
 	sessionAbi := util.MakeArgsTransferToAccount("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915", uint64(10))
-	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(1))
-	deploy = util.MakeDeploy(genesisAddress, transferToAccountCode, sessionAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp)
+	deploy = util.MakeDeploy(genesisAddress, transferToAccountCode, sessionAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	effects5, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -183,7 +176,7 @@ func main() {
 	// bonding
 	timestamp = time.Now().Unix()
 	bondingAbi := util.MakeArgsBonding(uint64(10))
-	deploy = util.MakeDeploy(genesisAddress, bondingCode, bondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp)
+	deploy = util.MakeDeploy(genesisAddress, bondingCode, bondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	effects6, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -195,7 +188,7 @@ func main() {
 	// unbonding
 	timestamp = time.Now().Unix()
 	ubbondingAbi := util.MakeArgsUnBonding(uint64(100))
-	deploy = util.MakeDeploy(genesisAddress, unbondingCode, ubbondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp)
+	deploy = util.MakeDeploy(genesisAddress, unbondingCode, ubbondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	effects7, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -222,9 +215,9 @@ func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCall
 
 	posCode = util.LoadWasmFile("./example/contracts/pos.wasm")
 
-	cntDefCode = util.LoadWasmFile("./example/contracts/counterdefine.wasm")
+	cntDefCode = util.LoadWasmFile("./example/contracts/counter_define.wasm")
 
-	cntCallCode = util.LoadWasmFile("./example/contracts/countercall.wasm")
+	cntCallCode = util.LoadWasmFile("./example/contracts/counter_call.wasm")
 
 	mintInstallCode = util.LoadWasmFile("./example/contracts/mint_install.wasm")
 

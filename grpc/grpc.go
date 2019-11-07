@@ -28,59 +28,11 @@ func Connect(path string) ipc.ExecutionEngineServiceClient {
 	return client
 }
 
-// RunGenensis 는 Execution Engine을 시작할 때 Genensis정보를 초기화하는 함수.
-//
-// genensis address, initial motes, timestamp, mintCode, posCode, validator Account 정보를 파라미터로 받아
-// RunGenensis 후 변경될 state hash와 effects를 return 받는다.
-func RunGenensis(
-	client ipc.ExecutionEngineServiceClient,
-	genesisAddress string,
-	strInitialMotes string,
-	timestamp int64,
-	mintCode []byte,
-	posCode []byte,
-	validators map[string]string,
-	protocolVersion *state.ProtocolVersion) (parentStateHash []byte, effects []*transforms.TransformEntry) {
-	initialMotes := &state.BigInt{Value: strInitialMotes, BitWidth: uint32(512)}
-
-	deployMintCode := &ipc.DeployCode{Code: mintCode}
-
-	deployPosCode := &ipc.DeployCode{Code: posCode}
-
-	genesisValidators := []*ipc.Bond{}
-
-	for address, stake := range validators {
-		genesisValidators = append(genesisValidators,
-			&ipc.Bond{ValidatorPublicKey: util.DecodeHexString(address), Stake: &state.BigInt{Value: stake, BitWidth: 512}})
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	r, err := client.RunGenesis(
-		ctx,
-		&ipc.GenesisRequest{
-			Address:           util.DecodeHexString(genesisAddress),
-			InitialMotes:      initialMotes,
-			Timestamp:         uint64(timestamp),
-			MintCode:          deployMintCode,
-			ProofOfStakeCode:  deployPosCode,
-			GenesisValidators: genesisValidators,
-			ProtocolVersion:   protocolVersion})
-	if err != nil {
-		panic(err)
-	}
-
-	genesisResult := r.GetSuccess()
-
-	return genesisResult.PoststateHash, genesisResult.GetEffect().GetTransformMap()
-}
-
-// RunGenensisWithChainSpec 는 Execution Engine을 시작할 때 Genensis정보를 chain에 떄라 초기화하는 함수.
+// RunGenesis 는 Execution Engine을 시작할 때 Genensis정보를 chain에 떄라 초기화하는 함수.
 //
 // chain name, timestamp, mintInstallCode, posInstallCode, validator Account, cost 정보를 파라미터로 받아
-// RunGenensisWithChainSpec 후 변경될 state hash와 effects를 return 받는다.
-func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
+// RunGenesis 후 변경될 state hash와 effects를 return 받는다.
+func RunGenesis(client ipc.ExecutionEngineServiceClient,
 	name string,
 	timestamp int64,
 	protocolVersion *state.ProtocolVersion,
@@ -110,7 +62,7 @@ func RunGenensisWithChainSpec(client ipc.ExecutionEngineServiceClient,
 			OpcodesMul:     mapCosts["opcodes-multiplier"],
 			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
 
-	r, err := client.RunGenesisWithChainspec(
+	r, err := client.RunGenesis(
 		ctx,
 		&ipc.ChainSpec_GenesisConfig{
 			Name:            name,

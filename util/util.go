@@ -200,7 +200,8 @@ func MakeDeploy(
 	paymentCode []byte,
 	paymentArgs []byte,
 	gasPrice uint64,
-	int64Timestamp int64) (deploy *ipc.DeployItem) {
+	int64Timestamp int64,
+	chainName string) (deploy *ipc.DeployItem) {
 	fromAddress := DecodeHexString(strFromAddress)
 	timestamp := uint64(int64Timestamp)
 
@@ -215,7 +216,8 @@ func MakeDeploy(
 		AccountPublicKey: fromAddress,
 		Timestamp:        timestamp,
 		GasPrice:         gasPrice,
-		BodyHash:         bodyHash}
+		BodyHash:         bodyHash,
+		ChainName:        chainName}
 
 	marshalDeployHeader, _ := proto.Marshal(deployHeader)
 	headerHash := Blake2b256(marshalDeployHeader)
