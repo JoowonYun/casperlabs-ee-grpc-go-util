@@ -32,46 +32,15 @@ func Connect(path string) ipc.ExecutionEngineServiceClient {
 //
 // chain name, timestamp, mintInstallCode, posInstallCode, validator Account, cost 정보를 파라미터로 받아
 // RunGenesis 후 변경될 state hash와 effects를 return 받는다.
-func RunGenesis(client ipc.ExecutionEngineServiceClient,
-	name string,
-	timestamp int64,
-	protocolVersion *state.ProtocolVersion,
-	mintInstallCode []byte,
-	posInstallCode []byte,
-	mapAccounts map[string][]string,
-	mapCosts map[string]uint32) (parentStateHash []byte, effects []*transforms.TransformEntry, errMessage string) {
+func RunGenesis(
+	client ipc.ExecutionEngineServiceClient, genesisConfig *ipc.ChainSpec_GenesisConfig) (
+	parentStateHash []byte, effects []*transforms.TransformEntry, errMessage string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	accounts := []*ipc.ChainSpec_GenesisAccount{}
-
-	for address, strAccount := range mapAccounts {
-		accounts = append(accounts, &ipc.ChainSpec_GenesisAccount{PublicKey: util.DecodeHexString(address), Balance: &state.BigInt{Value: strAccount[0], BitWidth: 512}, BondedAmount: &state.BigInt{Value: strAccount[1], BitWidth: 512}})
-	}
-
-	costs := &ipc.ChainSpec_CostTable{
-		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
-			Regular:        mapCosts["regular"],
-			Div:            mapCosts["div-multiplier"],
-			Mul:            mapCosts["mul-multiplier"],
-			Mem:            mapCosts["mem-multiplier"],
-			InitialMem:     mapCosts["mem-initial-pages"],
-			GrowMem:        mapCosts["mem-grow-per-page"],
-			Memcpy:         mapCosts["mem-copy-per-byte"],
-			MaxStackHeight: mapCosts["max-stack-height"],
-			OpcodesMul:     mapCosts["opcodes-multiplier"],
-			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
-
 	r, err := client.RunGenesis(
 		ctx,
-		&ipc.ChainSpec_GenesisConfig{
-			Name:            name,
-			Timestamp:       uint64(timestamp),
-			ProtocolVersion: protocolVersion,
-			MintInstaller:   mintInstallCode,
-			PosInstaller:    posInstallCode,
-			Accounts:        accounts,
-			Costs:           costs})
+		genesisConfig)
 
 	if err != nil {
 		errMessage = err.Error()
