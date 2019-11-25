@@ -242,3 +242,48 @@ func MakeInitDeploys() []*ipc.DeployItem {
 func AddDeploy(deploys []*ipc.DeployItem, deploy *ipc.DeployItem) []*ipc.DeployItem {
 	return append(deploys, deploy)
 }
+
+func GenesisConfigMock(
+	chainName string, address string, balance string, bondedAmount string, protocolVersion *state.ProtocolVersion,
+	mapCosts map[string]uint32, mintInstallWasmPath string, posInstallWasmPath string) (
+	*ipc.ChainSpec_GenesisConfig, error) {
+	genesisConfig := ipc.ChainSpec_GenesisConfig{}
+	genesisConfig.Name = chainName
+	genesisConfig.Timestamp = 0
+	genesisConfig.ProtocolVersion = protocolVersion
+
+	// load mint_install.wasm, pos_install.wasm
+	var err error
+	genesisConfig.MintInstaller, err = ioutil.ReadFile(mintInstallWasmPath)
+	if err != nil {
+		return nil, err
+	}
+	genesisConfig.PosInstaller, err = ioutil.ReadFile(posInstallWasmPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// GenesisAccount
+	accounts := make([]*ipc.ChainSpec_GenesisAccount, 1)
+	accounts[0] = &ipc.ChainSpec_GenesisAccount{}
+	accounts[0].PublicKey = DecodeHexString(address)
+	accounts[0].Balance = &state.BigInt{Value: balance, BitWidth: 512}
+	accounts[0].BondedAmount = &state.BigInt{Value: bondedAmount, BitWidth: 512}
+	genesisConfig.Accounts = accounts
+
+	// CostTable
+	genesisConfig.Costs = &ipc.ChainSpec_CostTable{
+		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
+			Regular:        mapCosts["regular"],
+			Div:            mapCosts["div-multiplier"],
+			Mul:            mapCosts["mul-multiplier"],
+			Mem:            mapCosts["mem-multiplier"],
+			InitialMem:     mapCosts["mem-initial-pages"],
+			GrowMem:        mapCosts["mem-grow-per-page"],
+			Memcpy:         mapCosts["mem-copy-per-byte"],
+			MaxStackHeight: mapCosts["max-stack-height"],
+			OpcodesMul:     mapCosts["opcodes-multiplier"],
+			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
+
+	return &genesisConfig, nil
+}

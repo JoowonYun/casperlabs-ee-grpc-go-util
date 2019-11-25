@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
@@ -17,9 +18,6 @@ func main() {
 	rootStateHash := emptyStateHash
 	genesisAddress := "d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
 	chainName := "hdac"
-	accounts := map[string][]string{
-		genesisAddress: []string{"500000000", "1000000"}}
-
 	costs := map[string]uint32{
 		"regular":            1,
 		"div-multiplier":     16,
@@ -73,14 +71,15 @@ func main() {
 	println(unbondingResult, len(unbondingCode))
 	println(errMessage)
 
-	parentStateHash, effects, errMessage := grpc.RunGenesis(client,
-		chainName,
-		0,
-		protocolVersion,
-		mintInstallCode,
-		posInstallCode,
-		accounts,
-		costs)
+	genesisConfig, err := util.GenesisConfigMock(
+		chainName, genesisAddress, "500000000", "1000000", protocolVersion, costs,
+		"./example/contracts/mint_install.wasm", "./example/contracts/pos_install.wasm")
+	if err != nil {
+		fmt.Printf("Bad GenesisConfigMock err : %v", err)
+		return
+	}
+
+	parentStateHash, effects, errMessage := grpc.RunGenesis(client, genesisConfig)
 
 	postStateHash, bonds, errMessage := grpc.Commit(client, rootStateHash, effects, protocolVersion)
 	if bytes.Equal(postStateHash, parentStateHash) {
