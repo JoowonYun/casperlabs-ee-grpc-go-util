@@ -7,9 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
-
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 )
 
 func main() {
@@ -79,7 +80,22 @@ func main() {
 		return
 	}
 
-	parentStateHash, effects, errMessage := grpc.RunGenesis(client, genesisConfig)
+	//var parentStateHash , effects
+	response, err := grpc.RunGenesis(client, genesisConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	var parentStateHash []byte
+	var effects []*transforms.TransformEntry
+
+	switch response.GetResult().(type) {
+	case *ipc.GenesisResponse_Success:
+		parentStateHash = response.GetSuccess().GetPoststateHash()
+		effects = response.GetSuccess().GetEffect().GetTransformMap()
+	case *ipc.GenesisResponse_FailedDeploy:
+		panic(response.GetFailedDeploy().GetMessage())
+	}
 
 	postStateHash, bonds, errMessage := grpc.Commit(client, rootStateHash, effects, protocolVersion)
 	if bytes.Equal(postStateHash, parentStateHash) {

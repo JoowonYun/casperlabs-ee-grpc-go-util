@@ -33,8 +33,7 @@ func Connect(path string) ipc.ExecutionEngineServiceClient {
 // chain name, timestamp, mintInstallCode, posInstallCode, validator Account, cost 정보를 파라미터로 받아
 // RunGenesis 후 변경될 state hash와 effects를 return 받는다.
 func RunGenesis(
-	client ipc.ExecutionEngineServiceClient, genesisConfig *ipc.ChainSpec_GenesisConfig) (
-	parentStateHash []byte, effects []*transforms.TransformEntry, errMessage string) {
+	client ipc.ExecutionEngineServiceClient, genesisConfig *ipc.ChainSpec_GenesisConfig) (*ipc.GenesisResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -43,18 +42,10 @@ func RunGenesis(
 		genesisConfig)
 
 	if err != nil {
-		errMessage = err.Error()
+		return nil, err
 	}
 
-	switch r.GetResult().(type) {
-	case *ipc.GenesisResponse_Success:
-		parentStateHash = r.GetSuccess().GetPoststateHash()
-		effects = r.GetSuccess().GetEffect().GetTransformMap()
-	case *ipc.GenesisResponse_FailedDeploy:
-		errMessage += r.GetFailedDeploy().GetMessage()
-	}
-
-	return parentStateHash, effects, errMessage
+	return r, nil
 }
 
 // Commit 은 Execute한 effects를 적용시킬 때 사용하는 함수.
