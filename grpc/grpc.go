@@ -269,13 +269,13 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 	return postStateHash, effects, errMessage
 }
 
-// QueryBlanace 는 address의 balance를 조회할 때 사용하는 함수.
+// QueryBalance 는 address의 balance를 조회할 때 사용하는 함수.
 //
 // 조회할 state hash와 address를 파라미터로 받아, key를 address로 Query한다.
 // name key에서 name이 mint인 uref를 추출하여 hex string로 변환하고 purse Id를 abi로 변환한 후 hex string으로 변환하여 붙인다.
 // 해당 값을 blake2b256을 하면 local bytes 값이 추출된다. 이 값을 key를 local로 하여 Query한다.
 // 받아온 uref값을 Key로 하여 Query하면 BigInt 형태의 blanace를 return 해준다.
-func QueryBlanace(client ipc.ExecutionEngineServiceClient,
+func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
 	address []byte,
 	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
