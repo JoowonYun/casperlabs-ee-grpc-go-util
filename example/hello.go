@@ -17,7 +17,7 @@ func main() {
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
-	genesisAddress := "d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
+	genesisAddress := util.DecodeHexString("d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84")
 	chainName := "hdac"
 	costs := map[string]uint32{
 		"regular":            1,
@@ -169,7 +169,8 @@ func main() {
 
 	// Run "Send transaction"
 	timestamp = time.Now().Unix()
-	sessionAbi := util.MakeArgsTransferToAccount("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915", uint64(10))
+	address1 := util.DecodeHexString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
+	sessionAbi := util.MakeArgsTransferToAccount(address1, uint64(10))
 	deploy = util.MakeDeploy(genesisAddress, transferToAccountCode, sessionAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
@@ -181,11 +182,11 @@ func main() {
 	println(bonds5[0].String())
 
 	queryResult4, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
-	println(genesisAddress, ": ", queryResult4)
+	println(util.EncodeToHexString(genesisAddress), ": ", queryResult4)
 	println(errMessage)
 
-	queryResult5, errMessage := grpc.QueryBlanace(client, rootStateHash, "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915", protocolVersion)
-	println("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915: ", queryResult5)
+	queryResult5, errMessage := grpc.QueryBlanace(client, rootStateHash, address1, protocolVersion)
+	println(util.EncodeToHexString(address1), ": ", queryResult5)
 	println(errMessage)
 
 	// bonding

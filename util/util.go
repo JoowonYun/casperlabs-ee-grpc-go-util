@@ -153,9 +153,8 @@ func reverseBytes(src []byte) []byte {
 //
 // string의 수신자 address를 받아 byte array로 변환하고 abi 형태로 만든다, amount 또한 abi 형태로 만든다.
 // 이 후 2개의 abi를 AbiMakeArgs를 통해 하나의 Abi args로 만들어 return 해준다.
-func MakeArgsTransferToAccount(address string, amount uint64) []byte {
-	addressBytes := DecodeHexString(address)
-	addressAbi := AbiBytesToBytes(addressBytes)
+func MakeArgsTransferToAccount(address []byte, amount uint64) []byte {
+	addressAbi := AbiBytesToBytes(address)
 	amountAbi := AbiUint64ToBytes(amount)
 	sessionAbiList := [][]byte{addressAbi, amountAbi}
 	return AbiMakeArgs(sessionAbiList)
@@ -194,7 +193,7 @@ func MakeArgsUnBonding(amount uint64) []byte {
 // Deploy Body Hash 값을 포함한 Deploy Header 값을 만들고 이를 Marshal한 값을 Blake2b256 Hash하여 Deploy Header Hash 값을 만든다.
 // Deploy Header Hash 값을 Deploy Item을 만들고 return 해준다.
 func MakeDeploy(
-	strFromAddress string,
+	fromAddress []byte,
 	sessionCode []byte,
 	sessionArgs []byte,
 	paymentCode []byte,
@@ -202,7 +201,6 @@ func MakeDeploy(
 	gasPrice uint64,
 	int64Timestamp int64,
 	chainName string) (deploy *ipc.DeployItem) {
-	fromAddress := DecodeHexString(strFromAddress)
 	timestamp := uint64(int64Timestamp)
 
 	deployBody := &consensus.Deploy_Body{
@@ -244,7 +242,7 @@ func AddDeploy(deploys []*ipc.DeployItem, deploy *ipc.DeployItem) []*ipc.DeployI
 }
 
 func GenesisConfigMock(
-	chainName string, address string, balance string, bondedAmount string, protocolVersion *state.ProtocolVersion,
+	chainName string, address []byte, balance string, bondedAmount string, protocolVersion *state.ProtocolVersion,
 	mapCosts map[string]uint32, mintInstallWasmPath string, posInstallWasmPath string) (
 	*ipc.ChainSpec_GenesisConfig, error) {
 	genesisConfig := ipc.ChainSpec_GenesisConfig{}
@@ -253,20 +251,13 @@ func GenesisConfigMock(
 	genesisConfig.ProtocolVersion = protocolVersion
 
 	// load mint_install.wasm, pos_install.wasm
-	var err error
-	genesisConfig.MintInstaller, err = ioutil.ReadFile(mintInstallWasmPath)
-	if err != nil {
-		return nil, err
-	}
-	genesisConfig.PosInstaller, err = ioutil.ReadFile(posInstallWasmPath)
-	if err != nil {
-		return nil, err
-	}
+	genesisConfig.MintInstaller = LoadWasmFile(mintInstallWasmPath)
+	genesisConfig.PosInstaller = LoadWasmFile(posInstallWasmPath)
 
 	// GenesisAccount
 	accounts := make([]*ipc.ChainSpec_GenesisAccount, 1)
 	accounts[0] = &ipc.ChainSpec_GenesisAccount{}
-	accounts[0].PublicKey = DecodeHexString(address)
+	accounts[0].PublicKey = address
 	accounts[0].Balance = &state.BigInt{Value: balance, BitWidth: 512}
 	accounts[0].BondedAmount = &state.BigInt{Value: bondedAmount, BitWidth: 512}
 	genesisConfig.Accounts = accounts
