@@ -104,7 +104,7 @@ func main() {
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds[0].String())
 
-	queryResult, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(genesisAddress, ": ", queryResult)
 	println(errMessage)
 
@@ -122,7 +122,7 @@ func main() {
 	println(util.EncodeToHexString(postStateHash2))
 	println(bonds2[0].String())
 
-	queryResult, errMessage = grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(genesisAddress, ": ", queryResult)
 	println(errMessage)
 
@@ -144,7 +144,7 @@ func main() {
 	println(queryResult1.GetIntValue())
 	println(errMessage)
 
-	queryResult, errMessage = grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(genesisAddress, ": ", queryResult)
 	println(errMessage)
 
@@ -163,7 +163,7 @@ func main() {
 	println(queryResult2.GetIntValue())
 	println(errMessage)
 
-	queryResult3, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	queryResult3, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(genesisAddress, ": ", queryResult3)
 	println(errMessage)
 
@@ -181,11 +181,11 @@ func main() {
 	println(util.EncodeToHexString(postStateHash5))
 	println(bonds5[0].String())
 
-	queryResult4, errMessage := grpc.QueryBlanace(client, rootStateHash, genesisAddress, protocolVersion)
+	queryResult4, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(util.EncodeToHexString(genesisAddress), ": ", queryResult4)
 	println(errMessage)
 
-	queryResult5, errMessage := grpc.QueryBlanace(client, rootStateHash, address1, protocolVersion)
+	queryResult5, errMessage := grpc.QueryBalance(client, rootStateHash, address1, protocolVersion)
 	println(util.EncodeToHexString(address1), ": ", queryResult5)
 	println(errMessage)
 
