@@ -1,4 +1,4 @@
-#   Casperlabs-ee-grpc-go-util  [![Build Status](https://travis-ci.com/hdac-io/casperlabs-ee-grpc-go-util.svg?token=GLBy52vf7tteTZjpJNu9&branch=master)
+#   Casperlabs-ee-grpc-go-util  ![Build Status](https://travis-ci.com/hdac-io/casperlabs-ee-grpc-go-util.svg?token=GLBy52vf7tteTZjpJNu9&branch=master)
 
 
 This module is for using GRPC and UTIL in GO to utilize Casperlabs Execution-Engine.
