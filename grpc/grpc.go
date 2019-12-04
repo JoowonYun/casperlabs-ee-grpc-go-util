@@ -136,20 +136,20 @@ func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocol
 func Query(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
 	keyType string,
-	keyData string,
+	keyData []byte,
 	path []string,
 	protocolVersion *state.ProtocolVersion) (result *state.Value, errMessage string) {
 
 	var key *state.Key
 	switch keyType {
 	case "address":
-		key = &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: util.DecodeHexString(keyData)}}}
+		key = &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: keyData}}}
 	case "local":
-		key = &state.Key{Value: &state.Key_Local_{Local: &state.Key_Local{Hash: util.DecodeHexString(keyData)}}}
+		key = &state.Key{Value: &state.Key_Local_{Local: &state.Key_Local{Hash: keyData}}}
 	case "uref":
-		key = &state.Key{Value: &state.Key_Uref{Uref: &state.Key_URef{Uref: util.DecodeHexString(keyData)}}}
+		key = &state.Key{Value: &state.Key_Uref{Uref: &state.Key_URef{Uref: keyData}}}
 	case "hash":
-		key = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: util.DecodeHexString(keyData)}}}
+		key = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: keyData}}}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -277,7 +277,7 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 // 받아온 uref값을 Key로 하여 Query하면 BigInt 형태의 blanace를 return 해준다.
 func QueryBlanace(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
-	address string,
+	address []byte,
 	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
 
 	res, errMessage := Query(client, stateHash, "address", address, []string{}, protocolVersion)
@@ -298,13 +298,13 @@ func QueryBlanace(client ipc.ExecutionEngineServiceClient,
 	localSrc := util.EncodeToHexString(mintUref) + util.EncodeToHexString(util.AbiBytesToBytes(purseID))
 	localBytes := util.Blake2b256(util.DecodeHexString(localSrc))
 
-	res, errMessage = Query(client, stateHash, "local", util.EncodeToHexString(localBytes), []string{}, protocolVersion)
+	res, errMessage = Query(client, stateHash, "local", localBytes, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
 
 	uref := res.GetKey().GetUref().GetUref()
-	res, errMessage = Query(client, stateHash, "uref", util.EncodeToHexString(uref), []string{}, protocolVersion)
+	res, errMessage = Query(client, stateHash, "uref", uref, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
