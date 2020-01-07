@@ -38,39 +38,7 @@ func main() {
 	client := grpc.Connect(socketPath)
 
 	// laod wasm code
-	mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode := loadWasmCode()
-
-	// validate all wasm code
-	mintResult, errMessage := grpc.Validate(client, mintCode, protocolVersion)
-	println(mintResult, len(mintCode))
-	println(errMessage)
-	posResult, errMessage := grpc.Validate(client, posCode, protocolVersion)
-	println(posResult, len(posCode))
-	println(errMessage)
-	cntDefResult, errMessage := grpc.Validate(client, cntDefCode, protocolVersion)
-	println(cntDefResult, len(cntDefCode))
-	println(errMessage)
-	cntCallResult, errMessage := grpc.Validate(client, cntCallCode, protocolVersion)
-	println(cntCallResult, len(cntCallCode))
-	println(errMessage)
-	mintInstallResult, errMessage := grpc.Validate(client, mintInstallCode, protocolVersion)
-	println(mintInstallResult, len(mintInstallCode))
-	println(errMessage)
-	posInstallResult, errMessage := grpc.Validate(client, posInstallCode, protocolVersion)
-	println(posInstallResult, len(posInstallCode))
-	println(errMessage)
-	transferToAccountResult, errMessage := grpc.Validate(client, transferToAccountCode, protocolVersion)
-	println(transferToAccountResult, len(transferToAccountCode))
-	println(errMessage)
-	standardPaymentResult, errMessage := grpc.Validate(client, standardPaymentCode, protocolVersion)
-	println(standardPaymentResult, len(standardPaymentCode))
-	println(errMessage)
-	bondingResult, errMessage := grpc.Validate(client, bondingCode, protocolVersion)
-	println(bondingResult, len(bondingCode))
-	println(errMessage)
-	unbondingResult, errMessage := grpc.Validate(client, unbondingCode, protocolVersion)
-	println(unbondingResult, len(unbondingCode))
-	println(errMessage)
+	cntDefCode, cntCallCode, _, _, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode := loadWasmCode()
 
 	genesisConfig, err := util.GenesisConfigMock(
 		chainName, genesisAddress, "500000000", "1000000", protocolVersion, costs,
@@ -105,12 +73,12 @@ func main() {
 	println(bonds[0].String())
 
 	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
-	println(genesisAddress, ": ", queryResult)
+	println(util.EncodeToHexString(genesisAddress), ": ", queryResult)
 	println(errMessage)
 
 	// Run "Counter Define contract"
 	timestamp := time.Now().Unix()
-	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(200000000))
+	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(10000000))
 	deploy := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
@@ -123,7 +91,7 @@ func main() {
 	println(bonds2[0].String())
 
 	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
-	println(genesisAddress, ": ", queryResult)
+	println(util.EncodeToHexString(genesisAddress), ": ", queryResult)
 	println(errMessage)
 
 	// Run "Counter Call contract"
@@ -145,7 +113,7 @@ func main() {
 	println(errMessage)
 
 	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
-	println(genesisAddress, ": ", queryResult)
+	println(util.EncodeToHexString(genesisAddress), ": ", queryResult)
 	println(errMessage)
 
 	timestamp = time.Now().Unix()
@@ -164,7 +132,7 @@ func main() {
 	println(errMessage)
 
 	queryResult3, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
-	println(genesisAddress, ": ", queryResult3)
+	println(util.EncodeToHexString(genesisAddress), ": ", queryResult3)
 	println(errMessage)
 
 	// Run "Send transaction"
@@ -226,11 +194,7 @@ func main() {
 	println(bonds8[0].String())
 }
 
-func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte, transferToAccountCode []byte, standardPaymentCode []byte, bondingCode []byte, unbondingCode []byte) {
-	mintCode = util.LoadWasmFile("./example/contracts/mint_token.wasm")
-
-	posCode = util.LoadWasmFile("./example/contracts/pos.wasm")
-
+func loadWasmCode() (cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte, transferToAccountCode []byte, standardPaymentCode []byte, bondingCode []byte, unbondingCode []byte) {
 	cntDefCode = util.LoadWasmFile("./example/contracts/counter_define.wasm")
 
 	cntCallCode = util.LoadWasmFile("./example/contracts/counter_call.wasm")
@@ -247,5 +211,5 @@ func loadWasmCode() (mintCode []byte, posCode []byte, cntDefCode []byte, cntCall
 
 	unbondingCode = util.LoadWasmFile("./example/contracts/unbonding.wasm")
 
-	return mintCode, posCode, cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode
+	return cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode
 }
