@@ -151,12 +151,11 @@ func reverseBytes(src []byte) []byte {
 
 // MakeArgsTransferToAccount 는 transfer_to_account.wasm을 사용할 때 Args를 만드는 함수.
 //
-// string의 수신자 address를 받아 byte array로 변환하고 abi 형태로 만든다, amount 또한 abi 형태로 만든다.
-// 이 후 2개의 abi를 AbiMakeArgs를 통해 하나의 Abi args로 만들어 return 해준다.
+// string의 수신자 address와 amount를 받아 amount를 abi 형태로 만든다.
+// 이 후 2개의 값을 AbiMakeArgs를 통해 하나의 Abi args로 만들어 return 해준다.
 func MakeArgsTransferToAccount(address []byte, amount uint64) []byte {
-	addressAbi := AbiBytesToBytes(address)
 	amountAbi := AbiUint64ToBytes(amount)
-	sessionAbiList := [][]byte{addressAbi, amountAbi}
+	sessionAbiList := [][]byte{address, amountAbi}
 	return AbiMakeArgs(sessionAbiList)
 }
 
@@ -275,6 +274,11 @@ func GenesisConfigMock(
 			MaxStackHeight: mapCosts["max-stack-height"],
 			OpcodesMul:     mapCosts["opcodes-multiplier"],
 			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
+
+	genesisConfig.DeployConfig = &ipc.ChainSpec_DeployConfig{
+		MaxTtlMillis:    86400000,
+		MaxDependencies: 10,
+	}
 
 	return &genesisConfig, nil
 }

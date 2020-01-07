@@ -1,4 +1,0 @@
-package transforms
-
-type IsTransform_TransformInstance = isTransform_TransformInstance
-type IsTransformFailure_FailureInstance = isTransformFailure_FailureInstance

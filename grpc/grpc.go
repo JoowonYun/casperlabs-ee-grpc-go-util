@@ -102,33 +102,6 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 	return postStateHash, validators, errMessage
 }
 
-// Validate 는 WasmCode를 받아 정상 Wasm파일인지 확인해주는 함수.
-//
-// byte array의 wasm을 받아 정상 wasm 파일인지 true, false를 return 해준다.
-func Validate(client ipc.ExecutionEngineServiceClient, wasmCode []byte, protocolVersion *state.ProtocolVersion) (result bool, errMessage string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	r, err := client.Validate(
-		ctx,
-		&ipc.ValidateRequest{
-			WasmCode:        wasmCode,
-			ProtocolVersion: protocolVersion})
-	if err != nil {
-		errMessage = err.Error()
-	}
-
-	switch r.GetResult().(type) {
-	case *ipc.ValidateResponse_Success:
-		result = true
-	case *ipc.ValidateResponse_Failure:
-		result = false
-		errMessage = r.GetFailure()
-	}
-
-	return result, errMessage
-}
-
 // Query 는 특정 state 에서 해당 Key의 path에 대한 정보를 조회해주는 함수.
 //
 // State hash, Key type, Key Data, path를 파라미터로 받아
@@ -295,8 +268,8 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		}
 	}
 
-	localSrc := util.EncodeToHexString(mintUref) + util.EncodeToHexString(util.AbiBytesToBytes(purseID))
-	localBytes := util.Blake2b256(util.DecodeHexString(localSrc))
+	resBytes := append(mintUref, purseID...)
+	localBytes := util.Blake2b256(resBytes)
 
 	res, errMessage = Query(client, stateHash, "local", localBytes, []string{}, protocolVersion)
 	if errMessage != "" {
