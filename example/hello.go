@@ -236,6 +236,8 @@ func executeErrorHandler(r *ipc.ExecuteResponse) (effects []*transforms.Transfor
 		}
 	case *ipc.ExecuteResponse_MissingParent:
 		err = fmt.Errorf("Missing parentstate : %s", util.EncodeToHexString(r.GetMissingParent().GetHash()))
+	default:
+		err = fmt.Errorf("Unknown result : %s", r.String())
 	}
 
 	return effects, err
