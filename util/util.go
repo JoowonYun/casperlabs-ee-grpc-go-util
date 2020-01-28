@@ -159,6 +159,11 @@ func MakeArgsTransferToAccount(address []byte, amount uint64) []byte {
 	return AbiMakeArgs(sessionAbiList)
 }
 
+func MakeArgsStoreTransferToAccount(address []byte, amount uint64) []byte {
+	sessionAbiList := [][]byte{AbiStringToBytes("send"), address, AbiUint64ToBytes(amount)}
+	return AbiMakeArgs(sessionAbiList)
+}
+
 // MakeArgsStandardPayment 는 standard_payment.wasm을 사용할 때 Args를 만드는 함수.
 //
 // big.Int은 amount를 받아 Abi형태로 만들고, AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
@@ -173,6 +178,12 @@ func MakeArgsStandardPayment(amount *big.Int) []byte {
 // uint64의 amount를 받아 Abi형태로 만들고, AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
 func MakeArgsBonding(amount uint64) []byte {
 	abiList := [][]byte{AbiUint64ToBytes(amount)}
+	abi := AbiMakeArgs(abiList)
+	return abi
+}
+
+func MakeArgsStoreBonding(method string, amount uint64, purseId []byte) []byte {
+	abiList := [][]byte{AbiStringToBytes(method), AbiUint64ToBytes(amount), purseId}
 	abi := AbiMakeArgs(abiList)
 	return abi
 }
@@ -193,9 +204,11 @@ func MakeArgsUnBonding(amount uint64) []byte {
 // Deploy Header Hash 값을 Deploy Item을 만들고 return 해준다.
 func MakeDeploy(
 	fromAddress []byte,
-	sessionCode []byte,
+	sessionName string,
+	sessionData []byte,
 	sessionArgs []byte,
-	paymentCode []byte,
+	paymentName string,
+	paymentData []byte,
 	paymentArgs []byte,
 	gasPrice uint64,
 	int64Timestamp int64,
@@ -203,8 +216,8 @@ func MakeDeploy(
 	timestamp := uint64(int64Timestamp)
 
 	deployBody := &consensus.Deploy_Body{
-		Session: &consensus.Deploy_Code{Contract: &consensus.Deploy_Code_Wasm{Wasm: sessionCode}, AbiArgs: sessionArgs},
-		Payment: &consensus.Deploy_Code{Contract: &consensus.Deploy_Code_Wasm{Wasm: paymentCode}, AbiArgs: paymentArgs}}
+		Session: MakeDeployCode(sessionName, sessionData, sessionArgs),
+		Payment: MakeDeployCode(paymentName, paymentData, paymentArgs)}
 
 	marshalDeployBody, _ := proto.Marshal(deployBody)
 	bodyHash := Blake2b256(marshalDeployBody)
@@ -221,13 +234,45 @@ func MakeDeploy(
 
 	deploy = &ipc.DeployItem{
 		Address:           fromAddress,
-		Session:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: sessionCode, Args: sessionArgs}}},
-		Payment:           &ipc.DeployPayload{Payload: &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: paymentCode, Args: paymentArgs}}},
+		Session:           MakeDeployPayload(sessionName, sessionData, sessionArgs),
+		Payment:           MakeDeployPayload(paymentName, paymentData, paymentArgs),
 		GasPrice:          gasPrice,
 		AuthorizationKeys: [][]byte{fromAddress},
 		DeployHash:        headerHash}
 
 	return deploy
+}
+
+func MakeDeployCode(name string, data []byte, args []byte) *consensus.Deploy_Code {
+	deployCode := &consensus.Deploy_Code{AbiArgs: args}
+	switch name {
+	case "wasm":
+		deployCode.Contract = &consensus.Deploy_Code_Wasm{Wasm: data}
+	case "uref":
+		deployCode.Contract = &consensus.Deploy_Code_Uref{Uref: data}
+	case "hash":
+		deployCode.Contract = &consensus.Deploy_Code_Hash{Hash: data}
+	default:
+		deployCode.Contract = &consensus.Deploy_Code_Name{Name: name}
+	}
+
+	return deployCode
+}
+
+func MakeDeployPayload(name string, data []byte, args []byte) *ipc.DeployPayload {
+	deployPayload := &ipc.DeployPayload{}
+	switch name {
+	case "wasm":
+		deployPayload.Payload = &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: data, Args: args}}
+	case "uref":
+		deployPayload.Payload = &ipc.DeployPayload_StoredContractUref{StoredContractUref: &ipc.StoredContractURef{Uref: data, Args: args}}
+	case "hash":
+		deployPayload.Payload = &ipc.DeployPayload_StoredContractHash{StoredContractHash: &ipc.StoredContractHash{Hash: data, Args: args}}
+	default:
+		deployPayload.Payload = &ipc.DeployPayload_StoredContractName{StoredContractName: &ipc.StoredContractName{StoredContractName: name, Args: args}}
+	}
+
+	return deployPayload
 }
 
 // MakeInitDeploys 은 Deploy Item array를 할당 받기위한 함수.
