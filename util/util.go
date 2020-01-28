@@ -243,33 +243,37 @@ func MakeDeploy(
 	return deploy
 }
 
-func MakeDeployCode(name string, data []byte, args []byte) *consensus.Deploy_Code {
+func MakeDeployCode(kind string, data []byte, args []byte) *consensus.Deploy_Code {
 	deployCode := &consensus.Deploy_Code{AbiArgs: args}
-	switch name {
+	switch kind {
 	case "wasm":
 		deployCode.Contract = &consensus.Deploy_Code_Wasm{Wasm: data}
 	case "uref":
 		deployCode.Contract = &consensus.Deploy_Code_Uref{Uref: data}
 	case "hash":
 		deployCode.Contract = &consensus.Deploy_Code_Hash{Hash: data}
+	case "name":
+		deployCode.Contract = &consensus.Deploy_Code_Name{Name: string(data)}
 	default:
-		deployCode.Contract = &consensus.Deploy_Code_Name{Name: name}
+		deployCode = nil
 	}
 
 	return deployCode
 }
 
-func MakeDeployPayload(name string, data []byte, args []byte) *ipc.DeployPayload {
+func MakeDeployPayload(kind string, data []byte, args []byte) *ipc.DeployPayload {
 	deployPayload := &ipc.DeployPayload{}
-	switch name {
+	switch kind {
 	case "wasm":
 		deployPayload.Payload = &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: data, Args: args}}
 	case "uref":
 		deployPayload.Payload = &ipc.DeployPayload_StoredContractUref{StoredContractUref: &ipc.StoredContractURef{Uref: data, Args: args}}
 	case "hash":
 		deployPayload.Payload = &ipc.DeployPayload_StoredContractHash{StoredContractHash: &ipc.StoredContractHash{Hash: data, Args: args}}
+	case "name":
+		deployPayload.Payload = &ipc.DeployPayload_StoredContractName{StoredContractName: &ipc.StoredContractName{StoredContractName: string(data), Args: args}}
 	default:
-		deployPayload.Payload = &ipc.DeployPayload_StoredContractName{StoredContractName: &ipc.StoredContractName{StoredContractName: name, Args: args}}
+		deployPayload = nil
 	}
 
 	return deployPayload
