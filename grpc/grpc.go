@@ -3,7 +3,6 @@ package grpc
 
 import (
 	"context"
-	"time"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
@@ -30,22 +29,13 @@ func Connect(path string) ipc.ExecutionEngineServiceClient {
 
 // RunGenesis 는 Execution Engine을 시작할 때 Genensis정보를 chain에 떄라 초기화하는 함수.
 //
-// chain name, timestamp, mintInstallCode, posInstallCode, validator Account, cost 정보를 파라미터로 받아
-// RunGenesis 후 변경될 state hash와 effects를 return 받는다.
+// ChainSpec_GenesisConfig 정보를 파라미터로 받아
+// RunGenesis 후 결과를 return 받는다.
 func RunGenesis(
 	client ipc.ExecutionEngineServiceClient, genesisConfig *ipc.ChainSpec_GenesisConfig) (*ipc.GenesisResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	r, err := client.RunGenesis(
-		ctx,
+	return client.RunGenesis(
+		context.TODO(),
 		genesisConfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
 }
 
 // Commit 은 Execute한 effects를 적용시킬 때 사용하는 함수.
@@ -56,11 +46,8 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 	prestateHash []byte,
 	effects []*transforms.TransformEntry,
 	protocolVersion *state.ProtocolVersion) (postStateHash []byte, validators []*ipc.Bond, errMessage string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	r, err := client.Commit(
-		ctx,
+		context.TODO(),
 		&ipc.CommitRequest{
 			PrestateHash:    prestateHash,
 			Effects:         effects,
@@ -125,11 +112,8 @@ func Query(client ipc.ExecutionEngineServiceClient,
 		key = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: keyData}}}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	r, err := client.Query(
-		ctx,
+		context.TODO(),
 		&ipc.QueryRequest{
 			StateHash:       stateHash,
 			BaseKey:         key,
@@ -151,40 +135,23 @@ func Query(client ipc.ExecutionEngineServiceClient,
 
 // Execute 는 deploys를 실행할떄의 effects를 받아오는 함수.
 //
-// state hash, timestamp, deploys를 파라미로 받아
-// Execute 후 적용하여야할 effects를 return 해준다.
+// state hash, timestamp, deploys를 파라미터로 받아
+// Execute 후 전체 response return 해준다.
 func Execute(client ipc.ExecutionEngineServiceClient,
 	parentStateHash []byte,
 	int64timestamp int64,
 	deploys []*ipc.DeployItem,
-	protocolVersion *state.ProtocolVersion) (effects []*transforms.TransformEntry, errMessage string) {
+	protocolVersion *state.ProtocolVersion) (response *ipc.ExecuteResponse, err error) {
 
 	timestamp := uint64(int64timestamp)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	r, err := client.Execute(
-		ctx,
+	return client.Execute(
+		context.TODO(),
 		&ipc.ExecuteRequest{
 			ParentStateHash: parentStateHash,
 			BlockTime:       timestamp,
 			Deploys:         deploys,
 			ProtocolVersion: protocolVersion})
-	if err != nil {
-		errMessage = err.Error()
-	}
-
-	switch r.GetResult().(type) {
-	case *ipc.ExecuteResponse_Success:
-		for _, res := range r.GetSuccess().GetDeployResults() {
-			effects = append(effects, res.GetExecutionResult().GetEffects().GetTransformMap()...)
-		}
-	case *ipc.ExecuteResponse_MissingParent:
-		errMessage = "Missing parentstate : " + util.EncodeToHexString(r.GetMissingParent().GetHash())
-	}
-
-	return effects, errMessage
 }
 
 // Upgrade 는 Wasm 코드나 Cost를 변경하여 Protocol Version을 Upgrade할 때 활용
@@ -218,11 +185,8 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 		UpgradeInstaller: &ipc.DeployCode{Code: wasmCode},
 		NewCosts:         costs}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	r, err := client.Upgrade(
-		ctx,
+		context.TODO(),
 		&ipc.UpgradeRequest{
 			ParentStateHash: parentStateHash,
 			UpgradePoint:    upgradePoint,
