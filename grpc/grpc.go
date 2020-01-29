@@ -3,6 +3,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
@@ -61,29 +62,29 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 		postStateHash = r.GetSuccess().GetPoststateHash()
 		validators = r.GetSuccess().GetBondedValidators()
 	case *ipc.CommitResponse_MissingPrestate:
-		errMessage = "Missing prestate : " + util.EncodeToHexString(r.GetMissingPrestate().GetHash())
+		errMessage = fmt.Sprintf("%s\nMissing prestate : %s", errMessage, util.EncodeToHexString(r.GetMissingPrestate().GetHash()))
 	case *ipc.CommitResponse_KeyNotFound:
-		errMessage += "Key not Found "
+		errMessage = fmt.Sprintf("%s\nKey not Found ", errMessage)
 		var hashValue []byte
 		switch r.GetKeyNotFound().GetValue().(type) {
 		case *state.Key_Address_:
-			errMessage += "(Address)"
+			errMessage = fmt.Sprintf("%s\n(Address)", errMessage)
 			hashValue = r.GetKeyNotFound().GetAddress().GetAccount()
 		case *state.Key_Hash_:
-			errMessage += "(Hash)"
+			errMessage = fmt.Sprintf("%s\n(Hash)", errMessage)
 			hashValue = r.GetKeyNotFound().GetHash().GetHash()
 		case *state.Key_Uref:
-			errMessage += "(Uref)"
+			errMessage = fmt.Sprintf("%s\n(Uref)", errMessage)
 			hashValue = r.GetKeyNotFound().GetUref().GetUref()
 		case *state.Key_Local_:
-			errMessage += "(Local)"
+			errMessage = fmt.Sprintf("%s\n(Local)", errMessage)
 			hashValue = r.GetKeyNotFound().GetLocal().GetHash()
 		}
-		errMessage += " : " + util.EncodeToHexString(hashValue)
+		errMessage = fmt.Sprintf("%s : %s", errMessage, util.EncodeToHexString(hashValue))
 	case *ipc.CommitResponse_TypeMismatch:
-		errMessage += "Type missmatch : expected (" + r.GetTypeMismatch().GetExpected() + "), but (" + r.GetTypeMismatch().GetFound() + ")"
+		errMessage = fmt.Sprintf("%s\nType missmatch : expected (%s), but (%s)", errMessage, r.GetTypeMismatch().GetExpected(), r.GetTypeMismatch().GetFound())
 	case *ipc.CommitResponse_FailedTransform:
-		errMessage += "Failed transform : " + r.GetFailedTransform().GetMessage()
+		errMessage = fmt.Sprintf("%s\nFailed transform : %s", errMessage, r.GetFailedTransform().GetMessage())
 	}
 
 	return postStateHash, validators, errMessage
