@@ -79,7 +79,7 @@ func main() {
 	// Run "Counter Define contract"
 	timestamp := time.Now().Unix()
 	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(10000000))
-	deploy := util.MakeDeploy(genesisAddress, "wasm", cntDefCode, []byte{}, "wasm", standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 
@@ -97,7 +97,7 @@ func main() {
 
 	// Run "Counter Call contract"
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, "wasm", cntCallCode, []byte{}, "wasm", standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -119,7 +119,7 @@ func main() {
 	println(errMessage)
 
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, "wasm", cntCallCode, []byte{}, "wasm", standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -142,7 +142,7 @@ func main() {
 	timestamp = time.Now().Unix()
 	address1 := util.DecodeHexString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
 	sessionAbi := util.MakeArgsTransferToAccount(address1, uint64(10))
-	deploy = util.MakeDeploy(genesisAddress, "wasm", transferToAccountCode, sessionAbi, "wasm", standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, transferToAccountCode, sessionAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -164,7 +164,7 @@ func main() {
 	// bonding
 	timestamp = time.Now().Unix()
 	bondingAbi := util.MakeArgsBonding(uint64(10))
-	deploy = util.MakeDeploy(genesisAddress, "wasm", bondingCode, bondingAbi, "wasm", standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, bondingCode, bondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -177,7 +177,7 @@ func main() {
 	// unbonding
 	timestamp = time.Now().Unix()
 	ubbondingAbi := util.MakeArgsUnBonding(uint64(100))
-	deploy = util.MakeDeploy(genesisAddress, "wasm", unbondingCode, ubbondingAbi, "wasm", standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, ubbondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)

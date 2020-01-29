@@ -204,10 +204,10 @@ func MakeArgsUnBonding(amount uint64) []byte {
 // Deploy Header Hash 값을 Deploy Item을 만들고 return 해준다.
 func MakeDeploy(
 	fromAddress []byte,
-	sessionName string,
+	sessionType ContractType,
 	sessionData []byte,
 	sessionArgs []byte,
-	paymentName string,
+	paymentType ContractType,
 	paymentData []byte,
 	paymentArgs []byte,
 	gasPrice uint64,
@@ -216,8 +216,8 @@ func MakeDeploy(
 	timestamp := uint64(int64Timestamp)
 
 	deployBody := &consensus.Deploy_Body{
-		Session: MakeDeployCode(sessionName, sessionData, sessionArgs),
-		Payment: MakeDeployCode(paymentName, paymentData, paymentArgs)}
+		Session: MakeDeployCode(sessionType, sessionData, sessionArgs),
+		Payment: MakeDeployCode(paymentType, paymentData, paymentArgs)}
 
 	marshalDeployBody, _ := proto.Marshal(deployBody)
 	bodyHash := Blake2b256(marshalDeployBody)
@@ -234,8 +234,8 @@ func MakeDeploy(
 
 	deploy = &ipc.DeployItem{
 		Address:           fromAddress,
-		Session:           MakeDeployPayload(sessionName, sessionData, sessionArgs),
-		Payment:           MakeDeployPayload(paymentName, paymentData, paymentArgs),
+		Session:           MakeDeployPayload(sessionType, sessionData, sessionArgs),
+		Payment:           MakeDeployPayload(paymentType, paymentData, paymentArgs),
 		GasPrice:          gasPrice,
 		AuthorizationKeys: [][]byte{fromAddress},
 		DeployHash:        headerHash}
@@ -243,16 +243,25 @@ func MakeDeploy(
 	return deploy
 }
 
-func MakeDeployCode(kind string, data []byte, args []byte) *consensus.Deploy_Code {
+type ContractType int
+
+const (
+	WASM = iota
+	UREF
+	HASH
+	NAME
+)
+
+func MakeDeployCode(contractType ContractType, data []byte, args []byte) *consensus.Deploy_Code {
 	deployCode := &consensus.Deploy_Code{AbiArgs: args}
-	switch kind {
-	case "wasm":
+	switch contractType {
+	case WASM:
 		deployCode.Contract = &consensus.Deploy_Code_Wasm{Wasm: data}
-	case "uref":
+	case UREF:
 		deployCode.Contract = &consensus.Deploy_Code_Uref{Uref: data}
-	case "hash":
+	case HASH:
 		deployCode.Contract = &consensus.Deploy_Code_Hash{Hash: data}
-	case "name":
+	case NAME:
 		deployCode.Contract = &consensus.Deploy_Code_Name{Name: string(data)}
 	default:
 		deployCode = nil
@@ -261,16 +270,16 @@ func MakeDeployCode(kind string, data []byte, args []byte) *consensus.Deploy_Cod
 	return deployCode
 }
 
-func MakeDeployPayload(kind string, data []byte, args []byte) *ipc.DeployPayload {
+func MakeDeployPayload(contractType ContractType, data []byte, args []byte) *ipc.DeployPayload {
 	deployPayload := &ipc.DeployPayload{}
-	switch kind {
-	case "wasm":
+	switch contractType {
+	case WASM:
 		deployPayload.Payload = &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: data, Args: args}}
-	case "uref":
+	case UREF:
 		deployPayload.Payload = &ipc.DeployPayload_StoredContractUref{StoredContractUref: &ipc.StoredContractURef{Uref: data, Args: args}}
-	case "hash":
+	case HASH:
 		deployPayload.Payload = &ipc.DeployPayload_StoredContractHash{StoredContractHash: &ipc.StoredContractHash{Hash: data, Args: args}}
-	case "name":
+	case NAME:
 		deployPayload.Payload = &ipc.DeployPayload_StoredContractName{StoredContractName: &ipc.StoredContractName{StoredContractName: string(data), Args: args}}
 	default:
 		deployPayload = nil
