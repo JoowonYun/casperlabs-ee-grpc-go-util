@@ -79,11 +79,12 @@ func main() {
 	// Run "Counter Define contract"
 	timestamp := time.Now().Unix()
 	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(10000000))
-	deploy := util.MakeDeploy(genesisAddress, cntDefCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 
-	effects2, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	res, err := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects2, err := executeErrorHandler(res)
 
 	postStateHash2, bonds2, errMessage := grpc.Commit(client, rootStateHash, effects2, protocolVersion)
 	rootStateHash = postStateHash2
@@ -96,10 +97,11 @@ func main() {
 
 	// Run "Counter Call contract"
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
-	effects3, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects3, err := executeErrorHandler(res)
 
 	postStateHash3, bonds3, errMessage := grpc.Commit(client, rootStateHash, effects3, protocolVersion)
 	rootStateHash = postStateHash3
@@ -117,10 +119,11 @@ func main() {
 	println(errMessage)
 
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, cntCallCode, []byte{}, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
-	effects4, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects4, err := executeErrorHandler(res)
 
 	postStateHash4, bonds4, errMessage := grpc.Commit(client, rootStateHash, effects4, protocolVersion)
 	rootStateHash = postStateHash4
@@ -139,10 +142,11 @@ func main() {
 	timestamp = time.Now().Unix()
 	address1 := util.DecodeHexString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
 	sessionAbi := util.MakeArgsTransferToAccount(address1, uint64(10))
-	deploy = util.MakeDeploy(genesisAddress, transferToAccountCode, sessionAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, transferToAccountCode, sessionAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
-	effects5, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects5, err := executeErrorHandler(res)
 
 	postStateHash5, bonds5, errMessage := grpc.Commit(client, rootStateHash, effects5, protocolVersion)
 	rootStateHash = postStateHash5
@@ -160,10 +164,11 @@ func main() {
 	// bonding
 	timestamp = time.Now().Unix()
 	bondingAbi := util.MakeArgsBonding(uint64(10))
-	deploy = util.MakeDeploy(genesisAddress, bondingCode, bondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, bondingCode, bondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
-	effects6, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects6, err := executeErrorHandler(res)
 	postStateHash6, bonds6, errMessage := grpc.Commit(client, rootStateHash, effects6, protocolVersion)
 	rootStateHash = postStateHash6
 	println(util.EncodeToHexString(rootStateHash))
@@ -172,10 +177,11 @@ func main() {
 	// unbonding
 	timestamp = time.Now().Unix()
 	ubbondingAbi := util.MakeArgsUnBonding(uint64(100))
-	deploy = util.MakeDeploy(genesisAddress, unbondingCode, ubbondingAbi, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, ubbondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
-	effects7, errMessage := grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects7, err := executeErrorHandler(res)
 	postStateHash7, bonds7, errMessage := grpc.Commit(client, rootStateHash, effects7, protocolVersion)
 	rootStateHash = postStateHash7
 	println(util.EncodeToHexString(rootStateHash))
@@ -212,4 +218,27 @@ func loadWasmCode() (cntDefCode []byte, cntCallCode []byte, mintInstallCode []by
 	unbondingCode = util.LoadWasmFile("./example/contracts/unbonding.wasm")
 
 	return cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode
+}
+
+func executeErrorHandler(r *ipc.ExecuteResponse) (effects []*transforms.TransformEntry, err error) {
+	switch r.GetResult().(type) {
+	case *ipc.ExecuteResponse_Success:
+		for _, res := range r.GetSuccess().GetDeployResults() {
+			switch res.GetExecutionResult().GetError().GetValue().(type) {
+			case *ipc.DeployError_GasError:
+				err = fmt.Errorf("DeployError_GasError")
+			case *ipc.DeployError_ExecError:
+				err = fmt.Errorf("DeployError_ExecError : %s", res.GetExecutionResult().GetError().GetExecError().GetMessage())
+			default:
+				effects = append(effects, res.GetExecutionResult().GetEffects().GetTransformMap()...)
+			}
+
+		}
+	case *ipc.ExecuteResponse_MissingParent:
+		err = fmt.Errorf("Missing parentstate : %s", util.EncodeToHexString(r.GetMissingParent().GetHash()))
+	default:
+		err = fmt.Errorf("Unknown result : %s", r.String())
+	}
+
+	return effects, err
 }

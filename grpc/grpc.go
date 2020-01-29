@@ -3,7 +3,7 @@ package grpc
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
@@ -30,22 +30,13 @@ func Connect(path string) ipc.ExecutionEngineServiceClient {
 
 // RunGenesis 는 Execution Engine을 시작할 때 Genensis정보를 chain에 떄라 초기화하는 함수.
 //
-// chain name, timestamp, mintInstallCode, posInstallCode, validator Account, cost 정보를 파라미터로 받아
-// RunGenesis 후 변경될 state hash와 effects를 return 받는다.
+// ChainSpec_GenesisConfig 정보를 파라미터로 받아
+// RunGenesis 후 결과를 return 받는다.
 func RunGenesis(
 	client ipc.ExecutionEngineServiceClient, genesisConfig *ipc.ChainSpec_GenesisConfig) (*ipc.GenesisResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	r, err := client.RunGenesis(
-		ctx,
+	return client.RunGenesis(
+		context.TODO(),
 		genesisConfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
 }
 
 // Commit 은 Execute한 effects를 적용시킬 때 사용하는 함수.
@@ -56,11 +47,8 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 	prestateHash []byte,
 	effects []*transforms.TransformEntry,
 	protocolVersion *state.ProtocolVersion) (postStateHash []byte, validators []*ipc.Bond, errMessage string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	r, err := client.Commit(
-		ctx,
+		context.TODO(),
 		&ipc.CommitRequest{
 			PrestateHash:    prestateHash,
 			Effects:         effects,
@@ -74,29 +62,29 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 		postStateHash = r.GetSuccess().GetPoststateHash()
 		validators = r.GetSuccess().GetBondedValidators()
 	case *ipc.CommitResponse_MissingPrestate:
-		errMessage = "Missing prestate : " + util.EncodeToHexString(r.GetMissingPrestate().GetHash())
+		errMessage = fmt.Sprintf("%s\nMissing prestate : %s", errMessage, util.EncodeToHexString(r.GetMissingPrestate().GetHash()))
 	case *ipc.CommitResponse_KeyNotFound:
-		errMessage += "Key not Found "
+		errMessage = fmt.Sprintf("%s\nKey not Found ", errMessage)
 		var hashValue []byte
 		switch r.GetKeyNotFound().GetValue().(type) {
 		case *state.Key_Address_:
-			errMessage += "(Address)"
+			errMessage = fmt.Sprintf("%s\n(Address)", errMessage)
 			hashValue = r.GetKeyNotFound().GetAddress().GetAccount()
 		case *state.Key_Hash_:
-			errMessage += "(Hash)"
+			errMessage = fmt.Sprintf("%s\n(Hash)", errMessage)
 			hashValue = r.GetKeyNotFound().GetHash().GetHash()
 		case *state.Key_Uref:
-			errMessage += "(Uref)"
+			errMessage = fmt.Sprintf("%s\n(Uref)", errMessage)
 			hashValue = r.GetKeyNotFound().GetUref().GetUref()
 		case *state.Key_Local_:
-			errMessage += "(Local)"
+			errMessage = fmt.Sprintf("%s\n(Local)", errMessage)
 			hashValue = r.GetKeyNotFound().GetLocal().GetHash()
 		}
-		errMessage += " : " + util.EncodeToHexString(hashValue)
+		errMessage = fmt.Sprintf("%s : %s", errMessage, util.EncodeToHexString(hashValue))
 	case *ipc.CommitResponse_TypeMismatch:
-		errMessage += "Type missmatch : expected (" + r.GetTypeMismatch().GetExpected() + "), but (" + r.GetTypeMismatch().GetFound() + ")"
+		errMessage = fmt.Sprintf("%s\nType missmatch : expected (%s), but (%s)", errMessage, r.GetTypeMismatch().GetExpected(), r.GetTypeMismatch().GetFound())
 	case *ipc.CommitResponse_FailedTransform:
-		errMessage += "Failed transform : " + r.GetFailedTransform().GetMessage()
+		errMessage = fmt.Sprintf("%s\nFailed transform : %s", errMessage, r.GetFailedTransform().GetMessage())
 	}
 
 	return postStateHash, validators, errMessage
@@ -125,11 +113,8 @@ func Query(client ipc.ExecutionEngineServiceClient,
 		key = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: keyData}}}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	r, err := client.Query(
-		ctx,
+		context.TODO(),
 		&ipc.QueryRequest{
 			StateHash:       stateHash,
 			BaseKey:         key,
@@ -151,40 +136,23 @@ func Query(client ipc.ExecutionEngineServiceClient,
 
 // Execute 는 deploys를 실행할떄의 effects를 받아오는 함수.
 //
-// state hash, timestamp, deploys를 파라미로 받아
-// Execute 후 적용하여야할 effects를 return 해준다.
+// state hash, timestamp, deploys를 파라미터로 받아
+// Execute 후 전체 response return 해준다.
 func Execute(client ipc.ExecutionEngineServiceClient,
 	parentStateHash []byte,
 	int64timestamp int64,
 	deploys []*ipc.DeployItem,
-	protocolVersion *state.ProtocolVersion) (effects []*transforms.TransformEntry, errMessage string) {
+	protocolVersion *state.ProtocolVersion) (response *ipc.ExecuteResponse, err error) {
 
 	timestamp := uint64(int64timestamp)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	r, err := client.Execute(
-		ctx,
+	return client.Execute(
+		context.TODO(),
 		&ipc.ExecuteRequest{
 			ParentStateHash: parentStateHash,
 			BlockTime:       timestamp,
 			Deploys:         deploys,
 			ProtocolVersion: protocolVersion})
-	if err != nil {
-		errMessage = err.Error()
-	}
-
-	switch r.GetResult().(type) {
-	case *ipc.ExecuteResponse_Success:
-		for _, res := range r.GetSuccess().GetDeployResults() {
-			effects = append(effects, res.GetExecutionResult().GetEffects().GetTransformMap()...)
-		}
-	case *ipc.ExecuteResponse_MissingParent:
-		errMessage = "Missing parentstate : " + util.EncodeToHexString(r.GetMissingParent().GetHash())
-	}
-
-	return effects, errMessage
 }
 
 // Upgrade 는 Wasm 코드나 Cost를 변경하여 Protocol Version을 Upgrade할 때 활용
@@ -218,11 +186,8 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 		UpgradeInstaller: &ipc.DeployCode{Code: wasmCode},
 		NewCosts:         costs}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	r, err := client.Upgrade(
-		ctx,
+		context.TODO(),
 		&ipc.UpgradeRequest{
 			ParentStateHash: parentStateHash,
 			UpgradePoint:    upgradePoint,
