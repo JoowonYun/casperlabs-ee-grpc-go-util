@@ -343,6 +343,7 @@ const (
 	WASM = iota
 	HASH
 	UREF
+	LOCAL
 	NAME
 )
 
