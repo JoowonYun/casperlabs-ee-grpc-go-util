@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
@@ -78,7 +80,16 @@ func main() {
 
 	// Run "Counter Define contract"
 	timestamp := time.Now().Unix()
-	paymentAbi := util.MakeArgsStandardPayment(new(big.Int).SetUint64(10000000))
+	paymentArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "fee",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{
+						Value:    strconv.Itoa(100000000),
+						BitWidth: 512,
+					}}}}}
+	paymentAbi := util.AbiDeployArgsTobytes(paymentArgs)
 	deploy := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
@@ -141,7 +152,19 @@ func main() {
 	// Run "Send transaction"
 	timestamp = time.Now().Unix()
 	address1 := util.DecodeHexString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
-	sessionAbi := util.MakeArgsTransferToAccount(address1, uint64(10))
+	sessionArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "address",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BytesValue{
+					BytesValue: address1}}},
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_LongValue{
+					LongValue: int64(10)}}},
+	}
+	sessionAbi := util.AbiDeployArgsTobytes(sessionArgs)
 	deploy = util.MakeDeploy(genesisAddress, util.WASM, transferToAccountCode, sessionAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
@@ -163,7 +186,14 @@ func main() {
 
 	// bonding
 	timestamp = time.Now().Unix()
-	bondingAbi := util.MakeArgsBonding(uint64(10))
+	bondingArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_LongValue{
+					LongValue: int64(10)}}},
+	}
+	bondingAbi := util.AbiDeployArgsTobytes(bondingArgs)
 	deploy = util.MakeDeploy(genesisAddress, util.WASM, bondingCode, bondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
@@ -176,8 +206,17 @@ func main() {
 
 	// unbonding
 	timestamp = time.Now().Unix()
-	ubbondingAbi := util.MakeArgsUnBonding(uint64(100))
-	deploy = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, ubbondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	unbondingArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_OptionalValue{
+					OptionalValue: &consensus.Deploy_Arg_Value{
+						Value: &consensus.Deploy_Arg_Value_LongValue{
+							LongValue: int64(100)}}}}},
+	}
+	unbondingAbi := util.AbiDeployArgsTobytes(unbondingArgs)
+	deploy = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, unbondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)

@@ -4,9 +4,13 @@ package util
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"io/ioutil"
 	"math/big"
+	"strconv"
+	"strings"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
@@ -136,6 +140,96 @@ func AbiBigIntTobytes(src *big.Int) []byte {
 	res = append(res, bytes...)
 
 	return res
+}
+
+func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) []byte {
+	res := make([]byte, 4)
+	binary.LittleEndian.PutUint32(res, uint32(len(src)))
+
+	for _, deployArg := range src {
+		bytes := AbiDeployArgTobytes(deployArg.GetValue())
+		lenBytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(lenBytes, uint32(len(bytes)))
+		res = append(res, lenBytes...)
+		res = append(res, bytes...)
+	}
+
+	return res
+}
+
+func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte) {
+	var data []byte
+	switch src.GetValue().(type) {
+	case *consensus.Deploy_Arg_Value_OptionalValue:
+		data = AbiOptionToBytes(AbiDeployArgTobytes(src.GetOptionalValue()))
+	case *consensus.Deploy_Arg_Value_BytesValue:
+		data = src.GetBytesValue()
+	case *consensus.Deploy_Arg_Value_IntValue:
+		data = AbiUint32ToBytes(uint32(src.GetIntValue()))
+	case *consensus.Deploy_Arg_Value_IntList:
+		// TODO : Need to test
+		intValues := src.GetIntList().GetValues()
+		for _, value := range intValues {
+			data = append(data, AbiUint32ToBytes(uint32(value))...)
+		}
+	case *consensus.Deploy_Arg_Value_StringValue:
+		data = AbiStringToBytes(src.GetStringValue())
+	case *consensus.Deploy_Arg_Value_StringList:
+		// TODO : Need to test
+		strValues := src.GetStringList().GetValues()
+		for _, value := range strValues {
+			data = append(data, AbiStringToBytes(value)...)
+		}
+	case *consensus.Deploy_Arg_Value_LongValue:
+		data = AbiUint64ToBytes(uint64(src.GetLongValue()))
+	case *consensus.Deploy_Arg_Value_BigInt:
+		// TODO : ParseUint didn't support 512.. need to change more.
+		bitWidth := uint32(64)
+		if src.GetBigInt().GetBitWidth() < 64 {
+			bitWidth = src.GetBigInt().GetBitWidth()
+		}
+		val, err := strconv.ParseUint(src.GetBigInt().GetValue(), 10, int(bitWidth))
+		if err != nil {
+			return []byte{}
+		}
+		data = AbiBigIntTobytes(new(big.Int).SetUint64(val))
+	case *consensus.Deploy_Arg_Value_Key:
+		switch src.GetKey().GetValue().(type) {
+		case *state.Key_Address_:
+			data = append([]byte{0}, AbiBytesToBytes(src.GetKey().GetAddress().GetAccount())...)
+		case *state.Key_Hash_:
+			data = append([]byte{1}, AbiBytesToBytes(src.GetKey().GetHash().GetHash())...)
+		case *state.Key_Uref:
+			data = append([]byte{2}, AbiBytesToBytes(src.GetKey().GetUref().GetUref())...)
+			data = append(data, []byte{byte(src.GetKey().GetUref().GetAccessRights())}...)
+		case *state.Key_Local_:
+			data = append([]byte{3}, AbiBytesToBytes(src.GetKey().GetLocal().GetHash())...)
+		}
+	default:
+		return []byte{}
+	}
+	res = append(res, data...)
+
+	return res
+}
+
+func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err error) {
+	jsonDecoder := json.NewDecoder(strings.NewReader(str))
+	_, err = jsonDecoder.Token()
+	if err != nil {
+		return deployArgs, err
+	}
+
+	for jsonDecoder.More() {
+		arg := consensus.Deploy_Arg{}
+		err := jsonpb.UnmarshalNext(jsonDecoder, &arg)
+		if err != nil {
+			return deployArgs, err
+		}
+		deployArgs = append(deployArgs, &arg)
+	}
+
+	return deployArgs, nil
 }
 
 func reverseBytes(src []byte) []byte {
