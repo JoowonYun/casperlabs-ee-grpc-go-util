@@ -196,14 +196,14 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte) {
 	case *consensus.Deploy_Arg_Value_Key:
 		switch src.GetKey().GetValue().(type) {
 		case *state.Key_Address_:
-			data = append([]byte{0}, AbiBytesToBytes(src.GetKey().GetAddress().GetAccount())...)
+			data = append([]byte{WASM}, src.GetKey().GetAddress().GetAccount()...)
 		case *state.Key_Hash_:
-			data = append([]byte{1}, AbiBytesToBytes(src.GetKey().GetHash().GetHash())...)
+			data = append([]byte{HASH}, src.GetKey().GetHash().GetHash()...)
 		case *state.Key_Uref:
-			data = append([]byte{2}, AbiBytesToBytes(src.GetKey().GetUref().GetUref())...)
+			data = append([]byte{UREF}, src.GetKey().GetUref().GetUref()...)
 			data = append(data, []byte{byte(src.GetKey().GetUref().GetAccessRights())}...)
 		case *state.Key_Local_:
-			data = append([]byte{3}, AbiBytesToBytes(src.GetKey().GetLocal().GetHash())...)
+			data = append([]byte{LOCAL}, src.GetKey().GetLocal().GetHash()...)
 		}
 	default:
 		return []byte{}
@@ -341,8 +341,8 @@ type ContractType int
 
 const (
 	WASM = iota
-	UREF
 	HASH
+	UREF
 	NAME
 )
 
