@@ -75,7 +75,7 @@ func TestAbiOptionToBytes(t *testing.T) {
 }
 
 func TestJsonStringToDeployArgs(t *testing.T) {
-	args, err := JsonStringToDeployArgs(`[{"name":"amount","value":{"intValue":123456}},{"name":"fee","value":{"intValue":54321}}]`)
+	args, err := JsonStringToDeployArgs(`[{"name":"amount","value":{"int_value":123456}},{"name":"fee","value":{"int_value":54321}}]`)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "amount", args[0].GetName())
