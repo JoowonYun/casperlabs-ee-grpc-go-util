@@ -142,26 +142,33 @@ func AbiBigIntTobytes(src *big.Int) []byte {
 	return res
 }
 
-func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) []byte {
+func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 	res := make([]byte, 4)
 	binary.LittleEndian.PutUint32(res, uint32(len(src)))
 
 	for _, deployArg := range src {
-		bytes := AbiDeployArgTobytes(deployArg.GetValue())
+		bytes, err := AbiDeployArgTobytes(deployArg.GetValue())
+		if err != nil {
+			return nil, err
+		}
 		lenBytes := make([]byte, 4)
 		binary.LittleEndian.PutUint32(lenBytes, uint32(len(bytes)))
 		res = append(res, lenBytes...)
 		res = append(res, bytes...)
 	}
 
-	return res
+	return res, nil
 }
 
-func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte) {
+func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error) {
 	var data []byte
 	switch src.GetValue().(type) {
 	case *consensus.Deploy_Arg_Value_OptionalValue:
-		data = AbiOptionToBytes(AbiDeployArgTobytes(src.GetOptionalValue()))
+		optionData, err := AbiDeployArgTobytes(src.GetOptionalValue())
+		if err != nil {
+			return nil, err
+		}
+		data = AbiOptionToBytes(optionData)
 	case *consensus.Deploy_Arg_Value_BytesValue:
 		data = src.GetBytesValue()
 	case *consensus.Deploy_Arg_Value_IntValue:
@@ -190,7 +197,7 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte) {
 		}
 		val, err := strconv.ParseUint(src.GetBigInt().GetValue(), 10, int(bitWidth))
 		if err != nil {
-			return []byte{}
+			return nil, err
 		}
 		data = AbiBigIntTobytes(new(big.Int).SetUint64(val))
 	case *consensus.Deploy_Arg_Value_Key:
@@ -206,25 +213,25 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte) {
 			data = append([]byte{LOCAL}, src.GetKey().GetLocal().GetHash()...)
 		}
 	default:
-		return []byte{}
+		return nil, err
 	}
 	res = append(res, data...)
 
-	return res
+	return res, nil
 }
 
 func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err error) {
 	jsonDecoder := json.NewDecoder(strings.NewReader(str))
 	_, err = jsonDecoder.Token()
 	if err != nil {
-		return deployArgs, err
+		return nil, err
 	}
 
 	for jsonDecoder.More() {
 		arg := consensus.Deploy_Arg{}
 		err := jsonpb.UnmarshalNext(jsonDecoder, &arg)
 		if err != nil {
-			return deployArgs, err
+			return nil, err
 		}
 		deployArgs = append(deployArgs, &arg)
 	}

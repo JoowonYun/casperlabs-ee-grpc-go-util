@@ -91,8 +91,9 @@ func TestAbiDeployToBytes_BytesValue(t *testing.T) {
 		},
 	}
 
-	res := AbiDeployArgTobytes(args)
+	res, err := AbiDeployArgTobytes(args)
 
+	assert.NoError(t, nil, err)
 	assert.Equal(t, []byte{147, 68, 51, 37, 29, 6, 244, 90}, res)
 }
 
@@ -103,8 +104,9 @@ func TestAbiDeployToBytes_IntValue(t *testing.T) {
 		},
 	}
 
-	res := AbiDeployArgTobytes(args)
+	res, err := AbiDeployArgTobytes(args)
 
+	assert.NoError(t, nil, err)
 	assert.Equal(t, []byte{10, 0, 0, 0}, res)
 }
 
@@ -115,8 +117,9 @@ func TestAbiDeployToBytes_LongValue(t *testing.T) {
 		},
 	}
 
-	res := AbiDeployArgTobytes(args)
+	res, err := AbiDeployArgTobytes(args)
 
+	assert.NoError(t, nil, err)
 	assert.Equal(t, []byte{1, 2, 3, 4, 0, 0, 0, 0}, res)
 }
 
@@ -130,7 +133,8 @@ func TestAbiBondAbi(t *testing.T) {
 					LongValue: int64(amount)}}},
 	}
 
-	res := AbiDeployArgsTobytes(args)
+	res, err := AbiDeployArgsTobytes(args)
+	assert.NoError(t, nil, err)
 	assert.Equal(t, []byte{
 		1, 0, 0, 0,
 		8, 0, 0, 0,
@@ -149,7 +153,8 @@ func TestAbiUnBondAbi(t *testing.T) {
 							LongValue: int64(amount)}}}}},
 	}
 
-	res := AbiDeployArgsTobytes(args)
+	res, err := AbiDeployArgsTobytes(args)
+	assert.NoError(t, nil, err)
 	assert.Equal(t, MakeArgsUnBonding(amount), res)
 	assert.Equal(t, []byte{
 		1, 0, 0, 0,
@@ -174,7 +179,8 @@ func TestAbiTransferAbi(t *testing.T) {
 					LongValue: int64(amount)}}},
 	}
 
-	res := AbiDeployArgsTobytes(args)
+	res, err := AbiDeployArgsTobytes(args)
+	assert.NoError(t, nil, err)
 	assert.Equal(t, []byte{
 		2, 0, 0, 0,
 		32, 0, 0, 0,
@@ -197,6 +203,7 @@ func TestAbiPaymentAbi(t *testing.T) {
 						BitWidth: 512,
 					}}}}}
 
-	res := AbiDeployArgsTobytes(args)
+	res, err := AbiDeployArgsTobytes(args)
+	assert.NoError(t, nil, err)
 	assert.Equal(t, MakeArgsStandardPayment(new(big.Int).SetUint64(uint64(fee))), res)
 }
