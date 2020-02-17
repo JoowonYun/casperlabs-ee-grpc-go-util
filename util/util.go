@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"math/big"
 	"strconv"
@@ -211,9 +212,11 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error
 			data = append(data, []byte{byte(src.GetKey().GetUref().GetAccessRights())}...)
 		case *state.Key_Local_:
 			data = append([]byte{LOCAL}, src.GetKey().GetLocal().GetHash()...)
+		default:
+			return nil, errors.New("Key value can only be Address, Hash, Uref, Local value.")
 		}
 	default:
-		return nil, err
+		return nil, errors.New("Args values can only come with Optional, ByteValue, IntValue, IntList, StringValue, LongValue, and Key values.")
 	}
 	res = append(res, data...)
 
