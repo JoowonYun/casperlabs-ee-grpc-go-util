@@ -4,9 +4,14 @@ package util
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"math/big"
+	"strconv"
+	"strings"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
@@ -138,6 +143,105 @@ func AbiBigIntTobytes(src *big.Int) []byte {
 	return res
 }
 
+func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
+	res := make([]byte, 4)
+	binary.LittleEndian.PutUint32(res, uint32(len(src)))
+
+	for _, deployArg := range src {
+		bytes, err := AbiDeployArgTobytes(deployArg.GetValue())
+		if err != nil {
+			return nil, err
+		}
+		lenBytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(lenBytes, uint32(len(bytes)))
+		res = append(res, lenBytes...)
+		res = append(res, bytes...)
+	}
+
+	return res, nil
+}
+
+func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error) {
+	var data []byte
+	switch src.GetValue().(type) {
+	case *consensus.Deploy_Arg_Value_OptionalValue:
+		optionData, err := AbiDeployArgTobytes(src.GetOptionalValue())
+		if err != nil {
+			return nil, err
+		}
+		data = AbiOptionToBytes(optionData)
+	case *consensus.Deploy_Arg_Value_BytesValue:
+		data = src.GetBytesValue()
+	case *consensus.Deploy_Arg_Value_IntValue:
+		data = AbiUint32ToBytes(uint32(src.GetIntValue()))
+	case *consensus.Deploy_Arg_Value_IntList:
+		// TODO : Need to test
+		intValues := src.GetIntList().GetValues()
+		for _, value := range intValues {
+			data = append(data, AbiUint32ToBytes(uint32(value))...)
+		}
+	case *consensus.Deploy_Arg_Value_StringValue:
+		data = AbiStringToBytes(src.GetStringValue())
+	case *consensus.Deploy_Arg_Value_StringList:
+		// TODO : Need to test
+		strValues := src.GetStringList().GetValues()
+		for _, value := range strValues {
+			data = append(data, AbiStringToBytes(value)...)
+		}
+	case *consensus.Deploy_Arg_Value_LongValue:
+		data = AbiUint64ToBytes(uint64(src.GetLongValue()))
+	case *consensus.Deploy_Arg_Value_BigInt:
+		// TODO : ParseUint didn't support 512.. need to change more.
+		bitWidth := uint32(64)
+		if src.GetBigInt().GetBitWidth() < 64 {
+			bitWidth = src.GetBigInt().GetBitWidth()
+		}
+		val, err := strconv.ParseUint(src.GetBigInt().GetValue(), 10, int(bitWidth))
+		if err != nil {
+			return nil, err
+		}
+		data = AbiBigIntTobytes(new(big.Int).SetUint64(val))
+	case *consensus.Deploy_Arg_Value_Key:
+		switch src.GetKey().GetValue().(type) {
+		case *state.Key_Address_:
+			data = append([]byte{WASM}, src.GetKey().GetAddress().GetAccount()...)
+		case *state.Key_Hash_:
+			data = append([]byte{HASH}, src.GetKey().GetHash().GetHash()...)
+		case *state.Key_Uref:
+			data = append([]byte{UREF}, src.GetKey().GetUref().GetUref()...)
+			data = append(data, []byte{byte(src.GetKey().GetUref().GetAccessRights())}...)
+		case *state.Key_Local_:
+			data = append([]byte{LOCAL}, src.GetKey().GetLocal().GetHash()...)
+		default:
+			return nil, errors.New("Key value can only be Address, Hash, Uref, Local value.")
+		}
+	default:
+		return nil, errors.New("Args values can only come with Optional, ByteValue, IntValue, IntList, StringValue, LongValue, and Key values.")
+	}
+	res = append(res, data...)
+
+	return res, nil
+}
+
+func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err error) {
+	jsonDecoder := json.NewDecoder(strings.NewReader(str))
+	_, err = jsonDecoder.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	for jsonDecoder.More() {
+		arg := consensus.Deploy_Arg{}
+		err := jsonpb.UnmarshalNext(jsonDecoder, &arg)
+		if err != nil {
+			return nil, err
+		}
+		deployArgs = append(deployArgs, &arg)
+	}
+
+	return deployArgs, nil
+}
+
 func reverseBytes(src []byte) []byte {
 	len := len(src)
 	for i := 0; i < (len / 2); i++ {
@@ -247,8 +351,9 @@ type ContractType int
 
 const (
 	WASM = iota
-	UREF
 	HASH
+	UREF
+	LOCAL
 	NAME
 )
 
