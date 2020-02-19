@@ -19,6 +19,8 @@ func main() {
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
 	genesisAddress := util.DecodeHexString("d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84")
+	systemContract := make([]byte, 32)
+
 	chainName := "hdac"
 	costs := map[string]uint32{
 		"regular":            1,
@@ -39,7 +41,7 @@ func main() {
 	client := grpc.Connect(socketPath)
 
 	// laod wasm code
-	cntDefCode, cntCallCode, _, _, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode := loadWasmCode()
+	cntDefCode, cntCallCode, _, _, _, standardPaymentCode, _, _ := loadWasmCode()
 
 	genesisConfig, err := util.GenesisConfigMock(
 		chainName, genesisAddress, "500000000", "1000000", protocolVersion, costs,
@@ -73,8 +75,9 @@ func main() {
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds[0].String())
 
-	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
-	println(util.EncodeToHexString(genesisAddress), ": ", queryResult)
+	queryResult10, errMessage := grpc.Query(client, rootStateHash, "address", systemContract, []string{}, protocolVersion)
+	proxyHash := queryResult10.GetAccount().GetNamedKeys()[0].GetKey().GetHash().GetHash()
+	println(util.EncodeToHexString(genesisAddress), ": ", proxyHash)
 	println(errMessage)
 
 	// Run "Counter Define contract"
@@ -100,7 +103,7 @@ func main() {
 	println(util.EncodeToHexString(postStateHash2))
 	println(bonds2[0].String())
 
-	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
+	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(util.EncodeToHexString(genesisAddress), ": ", queryResult)
 	println(errMessage)
 
@@ -150,7 +153,13 @@ func main() {
 	// Run "Send transaction"
 	timestamp = time.Now().Unix()
 	address1 := util.DecodeHexString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
+
 	sessionArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "transfer_to_account"}}},
 		&consensus.Deploy_Arg{
 			Name: "address",
 			Value: &consensus.Deploy_Arg_Value{
@@ -162,7 +171,8 @@ func main() {
 				Value: &consensus.Deploy_Arg_Value_LongValue{
 					LongValue: int64(10)}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, transferToAccountCode, sessionArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, sessionArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -185,12 +195,17 @@ func main() {
 	timestamp = time.Now().Unix()
 	bondingArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "bond"}}},
+		&consensus.Deploy_Arg{
 			Name: "amount",
 			Value: &consensus.Deploy_Arg_Value{
 				Value: &consensus.Deploy_Arg_Value_LongValue{
 					LongValue: int64(10)}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, bondingCode, bondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, bondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -204,6 +219,11 @@ func main() {
 	timestamp = time.Now().Unix()
 	unbondingArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "unbond"}}},
+		&consensus.Deploy_Arg{
 			Name: "amount",
 			Value: &consensus.Deploy_Arg_Value{
 				Value: &consensus.Deploy_Arg_Value_OptionalValue{
@@ -211,7 +231,7 @@ func main() {
 						Value: &consensus.Deploy_Arg_Value_LongValue{
 							LongValue: int64(100)}}}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, unbondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, unbondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
