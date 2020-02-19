@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
@@ -86,11 +85,10 @@ func main() {
 			Value: &consensus.Deploy_Arg_Value{
 				Value: &consensus.Deploy_Arg_Value_BigInt{
 					BigInt: &state.BigInt{
-						Value:    strconv.Itoa(100000000),
+						Value:    "100000000",
 						BitWidth: 512,
 					}}}}}
-	paymentAbi := util.AbiDeployArgsTobytes(paymentArgs)
-	deploy := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy, _ := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []*consensus.Deploy_Arg{}, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 
@@ -108,7 +106,7 @@ func main() {
 
 	// Run "Counter Call contract"
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -130,7 +128,7 @@ func main() {
 	println(errMessage)
 
 	timestamp = time.Now().Unix()
-	deploy = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []byte{}, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -164,8 +162,7 @@ func main() {
 				Value: &consensus.Deploy_Arg_Value_LongValue{
 					LongValue: int64(10)}}},
 	}
-	sessionAbi := util.AbiDeployArgsTobytes(sessionArgs)
-	deploy = util.MakeDeploy(genesisAddress, util.WASM, transferToAccountCode, sessionAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, transferToAccountCode, sessionArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -193,8 +190,7 @@ func main() {
 				Value: &consensus.Deploy_Arg_Value_LongValue{
 					LongValue: int64(10)}}},
 	}
-	bondingAbi := util.AbiDeployArgsTobytes(bondingArgs)
-	deploy = util.MakeDeploy(genesisAddress, util.WASM, bondingCode, bondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, bondingCode, bondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -215,8 +211,7 @@ func main() {
 						Value: &consensus.Deploy_Arg_Value_LongValue{
 							LongValue: int64(100)}}}}},
 	}
-	unbondingAbi := util.AbiDeployArgsTobytes(unbondingArgs)
-	deploy = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, unbondingAbi, util.WASM, standardPaymentCode, paymentAbi, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, unbondingCode, unbondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)

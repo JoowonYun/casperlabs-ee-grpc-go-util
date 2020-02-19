@@ -310,13 +310,13 @@ func MakeDeploy(
 	fromAddress []byte,
 	sessionType ContractType,
 	sessionData []byte,
-	sessionArgs []byte,
+	sessionArgs []*consensus.Deploy_Arg,
 	paymentType ContractType,
 	paymentData []byte,
-	paymentArgs []byte,
+	paymentArgs []*consensus.Deploy_Arg,
 	gasPrice uint64,
 	int64Timestamp int64,
-	chainName string) (deploy *ipc.DeployItem) {
+	chainName string) (deploy *ipc.DeployItem, err error) {
 	timestamp := uint64(int64Timestamp)
 
 	deployBody := &consensus.Deploy_Body{
@@ -336,15 +336,24 @@ func MakeDeploy(
 	marshalDeployHeader, _ := proto.Marshal(deployHeader)
 	headerHash := Blake2b256(marshalDeployHeader)
 
+	sessionAbi, err := AbiDeployArgsTobytes(sessionArgs)
+	if err != nil {
+		return nil, err
+	}
+	paymentAbi, err := AbiDeployArgsTobytes(paymentArgs)
+	if err != nil {
+		return nil, err
+	}
+
 	deploy = &ipc.DeployItem{
 		Address:           fromAddress,
-		Session:           MakeDeployPayload(sessionType, sessionData, sessionArgs),
-		Payment:           MakeDeployPayload(paymentType, paymentData, paymentArgs),
+		Session:           MakeDeployPayload(sessionType, sessionData, sessionAbi),
+		Payment:           MakeDeployPayload(paymentType, paymentData, paymentAbi),
 		GasPrice:          gasPrice,
 		AuthorizationKeys: [][]byte{fromAddress},
 		DeployHash:        headerHash}
 
-	return deploy
+	return deploy, nil
 }
 
 type ContractType int
@@ -357,8 +366,8 @@ const (
 	NAME
 )
 
-func MakeDeployCode(contractType ContractType, data []byte, args []byte) *consensus.Deploy_Code {
-	deployCode := &consensus.Deploy_Code{AbiArgs: args}
+func MakeDeployCode(contractType ContractType, data []byte, args []*consensus.Deploy_Arg) *consensus.Deploy_Code {
+	deployCode := &consensus.Deploy_Code{Args: args}
 	switch contractType {
 	case WASM:
 		deployCode.Contract = &consensus.Deploy_Code_Wasm{Wasm: data}
