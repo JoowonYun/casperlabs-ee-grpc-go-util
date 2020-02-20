@@ -253,6 +253,9 @@ func main() {
 	}
 	println(util.EncodeToHexString(rootStateHash))
 	println(bonds8[0].String())
+
+	println("Stress test start..")
+	stressTest()
 }
 
 func loadWasmCode() (cntDefCode []byte, cntCallCode []byte) {
