@@ -8,7 +8,6 @@ import (
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
-	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
@@ -41,7 +40,7 @@ func main() {
 	client := grpc.Connect(socketPath)
 
 	// laod wasm code
-	cntDefCode, cntCallCode, _, _, _, standardPaymentCode, _, _ := loadWasmCode()
+	cntDefCode, cntCallCode := loadWasmCode()
 
 	genesisConfig, err := util.GenesisConfigMock(
 		chainName, genesisAddress, "500000000", "1000000", protocolVersion, costs,
@@ -84,14 +83,16 @@ func main() {
 	timestamp := time.Now().Unix()
 	paymentArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "standard_payment"}}},
+		&consensus.Deploy_Arg{
 			Name: "fee",
 			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{
-						Value:    "100000000",
-						BitWidth: 512,
-					}}}}}
-	deploy, _ := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []*consensus.Deploy_Arg{}, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+				Value: &consensus.Deploy_Arg_Value_IntValue{
+					IntValue: 100000000}}}}
+	deploy, _ := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []*consensus.Deploy_Arg{}, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 
@@ -109,7 +110,7 @@ func main() {
 
 	// Run "Counter Call contract"
 	timestamp = time.Now().Unix()
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -131,7 +132,7 @@ func main() {
 	println(errMessage)
 
 	timestamp = time.Now().Unix()
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -172,7 +173,7 @@ func main() {
 					LongValue: int64(10)}}},
 	}
 
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, sessionArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, sessionArgs, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -205,7 +206,7 @@ func main() {
 				Value: &consensus.Deploy_Arg_Value_LongValue{
 					LongValue: int64(10)}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, bondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, bondingArgs, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -231,7 +232,7 @@ func main() {
 						Value: &consensus.Deploy_Arg_Value_LongValue{
 							LongValue: int64(100)}}}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, unbondingArgs, util.WASM, standardPaymentCode, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, unbondingArgs, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -254,24 +255,12 @@ func main() {
 	println(bonds8[0].String())
 }
 
-func loadWasmCode() (cntDefCode []byte, cntCallCode []byte, mintInstallCode []byte, posInstallCode []byte, transferToAccountCode []byte, standardPaymentCode []byte, bondingCode []byte, unbondingCode []byte) {
+func loadWasmCode() (cntDefCode []byte, cntCallCode []byte) {
 	cntDefCode = util.LoadWasmFile("./example/contracts/counter_define.wasm")
 
 	cntCallCode = util.LoadWasmFile("./example/contracts/counter_call.wasm")
 
-	mintInstallCode = util.LoadWasmFile("./example/contracts/mint_install.wasm")
-
-	posInstallCode = util.LoadWasmFile("./example/contracts/pos_install.wasm")
-
-	transferToAccountCode = util.LoadWasmFile("./example/contracts/transfer_to_account.wasm")
-
-	standardPaymentCode = util.LoadWasmFile("./example/contracts/standard_payment.wasm")
-
-	bondingCode = util.LoadWasmFile("./example/contracts/bonding.wasm")
-
-	unbondingCode = util.LoadWasmFile("./example/contracts/unbonding.wasm")
-
-	return cntDefCode, cntCallCode, mintInstallCode, posInstallCode, transferToAccountCode, standardPaymentCode, bondingCode, unbondingCode
+	return cntDefCode, cntCallCode
 }
 
 func executeErrorHandler(r *ipc.ExecuteResponse) (effects []*transforms.TransformEntry, err error) {
