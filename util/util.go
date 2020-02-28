@@ -152,9 +152,6 @@ func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		lenBytes := make([]byte, 4)
-		binary.LittleEndian.PutUint32(lenBytes, uint32(len(bytes)))
-		res = append(res, lenBytes...)
 		res = append(res, bytes...)
 	}
 
@@ -169,11 +166,12 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error
 		if err != nil {
 			return nil, err
 		}
-		data = AbiOptionToBytes(optionData)
+		optionDataType := len(optionData) - 1
+		data = ToBytes(FromOption(optionData[UINT32_LEN:optionDataType], state.CLType_Simple(optionData[optionDataType])))
 	case *consensus.Deploy_Arg_Value_BytesValue:
-		data = src.GetBytesValue()
+		data = ToBytes(FromFixedList(src.GetBytesValue(), state.CLType_U8))
 	case *consensus.Deploy_Arg_Value_IntValue:
-		data = AbiUint32ToBytes(uint32(src.GetIntValue()))
+		data = ToBytes(FromU32(uint32(src.GetIntValue())))
 	case *consensus.Deploy_Arg_Value_IntList:
 		// TODO : Need to test
 		intValues := src.GetIntList().GetValues()
@@ -181,15 +179,11 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error
 			data = append(data, AbiUint32ToBytes(uint32(value))...)
 		}
 	case *consensus.Deploy_Arg_Value_StringValue:
-		data = AbiStringToBytes(src.GetStringValue())
+		data = ToBytes(FromString(src.GetStringValue()))
 	case *consensus.Deploy_Arg_Value_StringList:
-		// TODO : Need to test
-		strValues := src.GetStringList().GetValues()
-		for _, value := range strValues {
-			data = append(data, AbiStringToBytes(value)...)
-		}
+		data = ToBytes(FromStringList(src.GetStringList().GetValues()))
 	case *consensus.Deploy_Arg_Value_LongValue:
-		data = AbiUint64ToBytes(uint64(src.GetLongValue()))
+		data = ToBytes(FromU64(uint64(src.GetLongValue())))
 	case *consensus.Deploy_Arg_Value_BigInt:
 		// TODO : ParseUint didn't support 512.. need to change more.
 		bitWidth := uint32(64)
@@ -200,7 +194,7 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error
 		if err != nil {
 			return nil, err
 		}
-		data = AbiBigIntTobytes(new(big.Int).SetUint64(val))
+		data = ToBytes(FromU512(new(big.Int).SetUint64(val)))
 	case *consensus.Deploy_Arg_Value_Key:
 		switch src.GetKey().GetValue().(type) {
 		case *state.Key_Address_:
@@ -260,11 +254,6 @@ func reverseBytes(src []byte) []byte {
 func MakeArgsTransferToAccount(address []byte, amount uint64) []byte {
 	amountAbi := AbiUint64ToBytes(amount)
 	sessionAbiList := [][]byte{address, amountAbi}
-	return AbiMakeArgs(sessionAbiList)
-}
-
-func MakeArgsStoreTransferToAccount(address []byte, amount uint64) []byte {
-	sessionAbiList := [][]byte{AbiStringToBytes("send"), address, AbiUint64ToBytes(amount)}
 	return AbiMakeArgs(sessionAbiList)
 }
 

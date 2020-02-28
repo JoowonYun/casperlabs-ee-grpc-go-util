@@ -99,7 +99,7 @@ func Query(client ipc.ExecutionEngineServiceClient,
 	keyType string,
 	keyData []byte,
 	path []string,
-	protocolVersion *state.ProtocolVersion) (result *state.Value, errMessage string) {
+	protocolVersion *state.ProtocolVersion) (result []byte, errMessage string) {
 
 	var key *state.Key
 	switch keyType {
@@ -223,8 +223,9 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		return balance, errMessage
 	}
 
-	purseID := res.GetAccount().GetPurseId().GetUref()
-	namedKeys := res.GetAccount().GetNamedKeys()
+	account := util.UnmarshalStoreValue(res).GetAccount()
+	purseID := account.GetPurseId().GetUref()
+	namedKeys := account.GetNamedKeys()
 	var mintUref []byte
 	for _, value := range namedKeys {
 		if value.GetName() == "mint" {
@@ -241,11 +242,18 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		return balance, errMessage
 	}
 
-	uref := res.GetKey().GetUref().GetUref()
+	urefClValueBytes := util.UnmarshalStoreValue(res)
+	urefKeys := util.ToValues(urefClValueBytes.GetClValue())
+
+	uref := urefKeys.GetKey().GetUref().GetUref()
 	res, errMessage = Query(client, stateHash, "uref", uref, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
 
-	return res.GetBigInt().GetValue(), errMessage
+	balanceClValueBytes := util.UnmarshalStoreValue(res)
+	balanceClValue := util.ToValues(balanceClValueBytes.GetClValue())
+	balance = balanceClValue.GetBigInt().GetValue()
+
+	return balance, errMessage
 }
