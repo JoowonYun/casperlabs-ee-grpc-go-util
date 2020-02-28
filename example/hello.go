@@ -75,8 +75,9 @@ func main() {
 	println(bonds[0].String())
 
 	queryResult10, errMessage := grpc.Query(client, rootStateHash, "address", systemContract, []string{}, protocolVersion)
-	proxyHash := queryResult10.GetAccount().GetNamedKeys()[0].GetKey().GetHash().GetHash()
-	println(util.EncodeToHexString(genesisAddress), ": ", proxyHash)
+	storedValue := util.UnmarshalStoreValue(queryResult10)
+	proxyHash := storedValue.GetAccount().GetNamedKeys()[0].GetKey().GetHash().GetHash()
+	println("Proxy hash : " + util.EncodeToHexString(proxyHash))
 	println(errMessage)
 
 	// Run "Counter Define contract"
@@ -124,7 +125,7 @@ func main() {
 	// Query counter contract.
 	path := []string{"counter", "count"}
 	queryResult1, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
-	println(queryResult1.GetIntValue())
+	println(util.ToValues(util.UnmarshalStoreValue(queryResult1).GetClValue()).GetIntValue())
 	println(errMessage)
 
 	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
@@ -144,7 +145,7 @@ func main() {
 	println(bonds4[0].String())
 
 	queryResult2, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
-	println(queryResult2.GetIntValue())
+	println(util.ToValues(util.UnmarshalStoreValue(queryResult2).GetClValue()).GetIntValue())
 	println(errMessage)
 
 	queryResult3, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)

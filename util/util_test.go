@@ -2,11 +2,9 @@ package util
 
 import (
 	"math/big"
-	"strconv"
 	"testing"
 
-	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
-	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -75,135 +73,30 @@ func TestAbiOptionToBytes(t *testing.T) {
 }
 
 func TestJsonStringToDeployArgs(t *testing.T) {
-	args, err := JsonStringToDeployArgs(`[{"name":"amount","value":{"int_value":123456}},{"name":"fee","value":{"int_value":54321}}]`)
+	inputStr := `[{"name":"amount","value":{"int_value":123456}},{"name":"fee","value":{"int_value":54321}}]`
+	args, err := JsonStringToDeployArgs(inputStr)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "amount", args[0].GetName())
 	assert.Equal(t, int32(123456), args[0].GetValue().GetIntValue())
 	assert.Equal(t, "fee", args[1].GetName())
 	assert.Equal(t, int32(54321), args[1].GetValue().GetIntValue())
-}
 
-func TestAbiDeployToBytes_BytesValue(t *testing.T) {
-	args := &consensus.Deploy_Arg_Value{
-		Value: &consensus.Deploy_Arg_Value_BytesValue{
-			BytesValue: []byte{147, 68, 51, 37, 29, 6, 244, 90},
-		},
+	m := &jsonpb.Marshaler{}
+	str := "["
+	for idx, arg := range args {
+		if idx != 0 {
+			str += ","
+		}
+		s, _ := m.MarshalToString(arg)
+		str += s
 	}
+	str += "]"
 
-	res, err := AbiDeployArgTobytes(args)
-
-	assert.NoError(t, nil, err)
-	assert.Equal(t, []byte{147, 68, 51, 37, 29, 6, 244, 90}, res)
-}
-
-func TestAbiDeployToBytes_IntValue(t *testing.T) {
-	args := &consensus.Deploy_Arg_Value{
-		Value: &consensus.Deploy_Arg_Value_IntValue{
-			IntValue: int32(10),
-		},
-	}
-
-	res, err := AbiDeployArgTobytes(args)
-
-	assert.NoError(t, nil, err)
-	assert.Equal(t, []byte{10, 0, 0, 0}, res)
-}
-
-func TestAbiDeployToBytes_LongValue(t *testing.T) {
-	args := &consensus.Deploy_Arg_Value{
-		Value: &consensus.Deploy_Arg_Value_LongValue{
-			LongValue: int64(67305985),
-		},
-	}
-
-	res, err := AbiDeployArgTobytes(args)
-
-	assert.NoError(t, nil, err)
-	assert.Equal(t, []byte{1, 2, 3, 4, 0, 0, 0, 0}, res)
-}
-
-func TestAbiBondAbi(t *testing.T) {
-	amount := uint64(1000000)
-	args := []*consensus.Deploy_Arg{
-		&consensus.Deploy_Arg{
-			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_LongValue{
-					LongValue: int64(amount)}}},
-	}
-
-	res, err := AbiDeployArgsTobytes(args)
-	assert.NoError(t, nil, err)
-	assert.Equal(t, []byte{
-		1, 0, 0, 0,
-		8, 0, 0, 0,
-		64, 66, 15, 0, 0, 0, 0, 0}, res)
-}
-
-func TestAbiUnBondAbi(t *testing.T) {
-	amount := uint64(1000000)
-	args := []*consensus.Deploy_Arg{
-		&consensus.Deploy_Arg{
-			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_OptionalValue{
-					OptionalValue: &consensus.Deploy_Arg_Value{
-						Value: &consensus.Deploy_Arg_Value_LongValue{
-							LongValue: int64(amount)}}}}},
-	}
-
-	res, err := AbiDeployArgsTobytes(args)
-	assert.NoError(t, nil, err)
-	assert.Equal(t, MakeArgsUnBonding(amount), res)
-	assert.Equal(t, []byte{
-		1, 0, 0, 0,
-		9, 0, 0, 0,
-		1, 64, 66, 15, 0, 0, 0, 0, 0}, res)
-}
-
-func TestAbiTransferAbi(t *testing.T) {
-	address := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
-	amount := uint64(1234567)
-
-	args := []*consensus.Deploy_Arg{
-		&consensus.Deploy_Arg{
-			Name: "address",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BytesValue{
-					BytesValue: address}}},
-		&consensus.Deploy_Arg{
-			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_LongValue{
-					LongValue: int64(amount)}}},
-	}
-
-	res, err := AbiDeployArgsTobytes(args)
-	assert.NoError(t, nil, err)
-	assert.Equal(t, []byte{
-		2, 0, 0, 0,
-		32, 0, 0, 0,
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-		8, 0, 0, 0,
-		135, 214, 18, 0, 0, 0, 0, 0}, res)
-}
-
-func TestAbiPaymentAbi(t *testing.T) {
-	fee := 100000000
-	assert.Equal(t, "100000000", strconv.Itoa(fee))
-
-	args := []*consensus.Deploy_Arg{
-		&consensus.Deploy_Arg{
-			Name: "fee",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{
-						Value:    strconv.Itoa(fee),
-						BitWidth: 512,
-					}}}}}
-
-	res, err := AbiDeployArgsTobytes(args)
-	assert.NoError(t, nil, err)
-	assert.Equal(t, MakeArgsStandardPayment(new(big.Int).SetUint64(uint64(fee))), res)
+	args2, err := JsonStringToDeployArgs(str)
+	assert.NoError(t, err)
+	assert.Equal(t, args[0].GetName(), args2[0].GetName())
+	assert.Equal(t, args[0].GetValue().GetIntValue(), args2[0].GetValue().GetIntValue())
+	assert.Equal(t, args[1].GetName(), args2[1].GetName())
+	assert.Equal(t, args[1].GetValue().GetIntValue(), args2[1].GetValue().GetIntValue())
 }
