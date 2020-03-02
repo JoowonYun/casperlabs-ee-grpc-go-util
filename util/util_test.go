@@ -49,7 +49,12 @@ func TestAbiStringToBytes(t *testing.T) {
 }
 
 func TestAbiBigIntTobytes(t *testing.T) {
-	res := AbiBigIntTobytes(new(big.Int).SetUint64(256))
+	src := new(big.Int)
+	src, err := src.SetString("256", 10)
+	if !err {
+		panic(err)
+	}
+	res := AbiBigIntTobytes(src)
 	assert.Equal(t, res, []byte{2, 0, 1})
 }
 

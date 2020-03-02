@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -185,16 +184,12 @@ func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error
 	case *consensus.Deploy_Arg_Value_LongValue:
 		data = ToBytes(FromU64(uint64(src.GetLongValue())))
 	case *consensus.Deploy_Arg_Value_BigInt:
-		// TODO : ParseUint didn't support 512.. need to change more.
-		bitWidth := uint32(64)
-		if src.GetBigInt().GetBitWidth() < 64 {
-			bitWidth = src.GetBigInt().GetBitWidth()
+		val := new(big.Int)
+		val, ok := val.SetString(src.GetBigInt().GetValue(), 10)
+		if !ok {
+			return nil, errors.New("Bigint data is invalid.")
 		}
-		val, err := strconv.ParseUint(src.GetBigInt().GetValue(), 10, int(bitWidth))
-		if err != nil {
-			return nil, err
-		}
-		data = ToBytes(FromU512(new(big.Int).SetUint64(val)))
+		data = ToBytes(FromU512(val))
 	case *consensus.Deploy_Arg_Value_Key:
 		switch src.GetKey().GetValue().(type) {
 		case *state.Key_Address_:
