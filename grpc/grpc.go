@@ -8,6 +8,7 @@ import (
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/storedvalue"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 
@@ -223,13 +224,17 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		return balance, errMessage
 	}
 
-	account := util.UnmarshalStoreValue(res).GetAccount()
-	purseID := account.GetPurseId().GetUref()
-	namedKeys := account.GetNamedKeys()
+	var storedValue storedvalue.StoredValue
+	storedValue, err, _ := storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	account := storedValue.Account
+	purseID := account.PurseId.Address
 	var mintUref []byte
-	for _, value := range namedKeys {
-		if value.GetName() == "mint" {
-			mintUref = value.GetKey().GetUref().GetUref()
+	for _, namedKey := range account.NamedKeys {
+		if namedKey.Name == "mint" {
+			mintUref = namedKey.Key.Uref.Address
 			break
 		}
 	}
@@ -242,18 +247,19 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		return balance, errMessage
 	}
 
-	urefClValueBytes := util.UnmarshalStoreValue(res)
-	urefKeys := util.ToValues(urefClValueBytes.GetClValue())
+	storedValue, err, _ = storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	uref := storedValue.ClValue.ToStateValues().GetKey().GetUref().GetUref()
 
-	uref := urefKeys.GetKey().GetUref().GetUref()
 	res, errMessage = Query(client, stateHash, "uref", uref, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
 
-	balanceClValueBytes := util.UnmarshalStoreValue(res)
-	balanceClValue := util.ToValues(balanceClValueBytes.GetClValue())
-	balance = balanceClValue.GetBigInt().GetValue()
+	storedValue, err, _ = storedValue.FromBytes(res)
+	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
 
 	return balance, errMessage
 }

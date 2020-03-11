@@ -5,16 +5,16 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"math/big"
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/storedvalue"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -135,7 +135,7 @@ func AbiMakeArgs(src [][]byte) []byte {
 //
 // big.Int를 byte array로 변환 후 reverse하고, 해당 length를 맨 앞에 추가해준다.
 func AbiBigIntTobytes(src *big.Int) []byte {
-	bytes := reverseBytes(src.Bytes())
+	bytes := ReverseBytes(src.Bytes())
 	res := []byte{byte(len(bytes))}
 	res = append(res, bytes...)
 
@@ -147,72 +147,22 @@ func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 	binary.LittleEndian.PutUint32(res, uint32(len(src)))
 
 	for _, deployArg := range src {
-		bytes, err := AbiDeployArgTobytes(deployArg.GetValue())
+		var clValue storedvalue.CLValue
+		clValue, err := clValue.FromDeployArgValue(deployArg.GetValue())
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, bytes...)
+		res = append(res, clValue.ToBytes()...)
 	}
-
-	return res, nil
-}
-
-func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error) {
-	var data []byte
-	switch src.GetValue().(type) {
-	case *consensus.Deploy_Arg_Value_OptionalValue:
-		optionData, err := AbiDeployArgTobytes(src.GetOptionalValue())
-		if err != nil {
-			return nil, err
-		}
-		optionDataType := len(optionData) - 1
-		data = ToBytes(FromOption(optionData[UINT32_LEN:optionDataType], state.CLType_Simple(optionData[optionDataType])))
-	case *consensus.Deploy_Arg_Value_BytesValue:
-		data = ToBytes(FromFixedList(src.GetBytesValue(), state.CLType_U8))
-	case *consensus.Deploy_Arg_Value_IntValue:
-		data = ToBytes(FromU32(uint32(src.GetIntValue())))
-	case *consensus.Deploy_Arg_Value_IntList:
-		// TODO : Need to test
-		intValues := src.GetIntList().GetValues()
-		for _, value := range intValues {
-			data = append(data, AbiUint32ToBytes(uint32(value))...)
-		}
-	case *consensus.Deploy_Arg_Value_StringValue:
-		data = ToBytes(FromString(src.GetStringValue()))
-	case *consensus.Deploy_Arg_Value_StringList:
-		data = ToBytes(FromStringList(src.GetStringList().GetValues()))
-	case *consensus.Deploy_Arg_Value_LongValue:
-		data = ToBytes(FromU64(uint64(src.GetLongValue())))
-	case *consensus.Deploy_Arg_Value_BigInt:
-		val := new(big.Int)
-		val, ok := val.SetString(src.GetBigInt().GetValue(), 10)
-		if !ok {
-			return nil, errors.New("Bigint data is invalid.")
-		}
-		data = ToBytes(FromU512(val))
-	case *consensus.Deploy_Arg_Value_Key:
-		switch src.GetKey().GetValue().(type) {
-		case *state.Key_Address_:
-			data = append([]byte{WASM}, src.GetKey().GetAddress().GetAccount()...)
-		case *state.Key_Hash_:
-			data = append([]byte{HASH}, src.GetKey().GetHash().GetHash()...)
-		case *state.Key_Uref:
-			data = append([]byte{UREF}, src.GetKey().GetUref().GetUref()...)
-			data = append(data, []byte{byte(src.GetKey().GetUref().GetAccessRights())}...)
-		case *state.Key_Local_:
-			data = append([]byte{LOCAL}, src.GetKey().GetLocal().GetHash()...)
-		default:
-			return nil, errors.New("Key value can only be Address, Hash, Uref, Local value.")
-		}
-	default:
-		return nil, errors.New("Args values can only come with Optional, ByteValue, IntValue, IntList, StringValue, LongValue, and Key values.")
-	}
-	res = append(res, data...)
 
 	return res, nil
 }
 
 func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err error) {
+	if str == "" {
+		return []*consensus.Deploy_Arg{}, nil
+	}
+
 	jsonDecoder := json.NewDecoder(strings.NewReader(str))
 	_, err = jsonDecoder.Token()
 	if err != nil {
@@ -231,7 +181,25 @@ func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err
 	return deployArgs, nil
 }
 
-func reverseBytes(src []byte) []byte {
+func DeployArgsToJsonString(args []*consensus.Deploy_Arg) (string, error) {
+	m := &jsonpb.Marshaler{}
+	str := "["
+	for idx, arg := range args {
+		if idx != 0 {
+			str += ","
+		}
+		s, err := m.MarshalToString(arg)
+		if err != nil {
+			return "", err
+		}
+		str += s
+	}
+	str += "]"
+
+	return str, nil
+}
+
+func ReverseBytes(src []byte) []byte {
 	len := len(src)
 	for i := 0; i < (len / 2); i++ {
 		tmp := src[i]
@@ -294,15 +262,23 @@ func MakeDeploy(
 	fromAddress []byte,
 	sessionType ContractType,
 	sessionData []byte,
-	sessionArgs []*consensus.Deploy_Arg,
+	sessionArgsStr string,
 	paymentType ContractType,
 	paymentData []byte,
-	paymentArgs []*consensus.Deploy_Arg,
+	paymentArgsStr string,
 	gasPrice uint64,
 	int64Timestamp int64,
 	chainName string) (deploy *ipc.DeployItem, err error) {
 	timestamp := uint64(int64Timestamp)
 
+	sessionArgs, err := JsonStringToDeployArgs(sessionArgsStr)
+	if err != nil {
+		return nil, err
+	}
+	paymentArgs, err := JsonStringToDeployArgs(paymentArgsStr)
+	if err != nil {
+		return nil, err
+	}
 	deployBody := &consensus.Deploy_Body{
 		Session: MakeDeployCode(sessionType, sessionData, sessionArgs),
 		Payment: MakeDeployCode(paymentType, paymentData, paymentArgs)}

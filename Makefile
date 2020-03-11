@@ -1,7 +1,7 @@
 .PHONY: test
 test:
+	go test ./storedvalue
 	go test ./util
-	#go test ./grpc
 
 .PHONY: clean
 clean:
