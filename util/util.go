@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"math/big"
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -60,86 +59,6 @@ func Blake2b256(ob []byte) []byte {
 // MakeProtocolVersion 은 major, minor, patch의 값을 받아 ProtocolVersion 을 만들어주는 함수
 func MakeProtocolVersion(major uint32, minor uint32, patch uint32) *state.ProtocolVersion {
 	return &state.ProtocolVersion{Major: uint32(major), Minor: uint32(minor), Patch: uint32(patch)}
-}
-
-// AbiUint32ToBytes 는 uint32 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// little endian의 uint32형태로 넣는다.
-func AbiUint32ToBytes(src uint32) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, src)
-	return res
-}
-
-// AbiUint64ToBytes 는 uint64 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// little endian의 uint64형태로 넣는다.
-func AbiUint64ToBytes(src uint64) []byte {
-	res := make([]byte, 8)
-	binary.LittleEndian.PutUint64(res, src)
-	return res
-}
-
-// AbiBytesToBytes 는 byte array 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// byte array의 길이를 little endian의 uint32형태로 넣고, 그 뒤 src 내용을 붙인다.
-func AbiBytesToBytes(src []byte) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, uint32(len(src)))
-	res = append(res, src...)
-	return res
-}
-
-// AbiOptionToBytes 는 byte array 형식에 Abi 형태인 Option을 추가한 byte array로 변경해주는 함수.
-//
-// byte array에서 값이 있으면 앞에 1을 추가하고 없으면 0을 추가한다.
-func AbiOptionToBytes(src []byte) []byte {
-	res := make([]byte, 1)
-	if len(src) > 0 {
-		res[0] = 1
-		res = append(res, src...)
-	}
-
-	return res
-}
-
-// AbiStringToBytes 는 string 형식에 Abi 형태인 byte array로 변경해주는 함수.
-//
-// string의 length를 little endian의 uint32형태로 넣고, src를 utf8인코딩의 byte array로 변환하여 붙인다.
-func AbiStringToBytes(src string) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, uint32(len(src)))
-	res = append(res, []byte(src)...)
-	return res
-}
-
-// AbiMakeArgs 는 deploy에 사용할 Args를 abi 형태인 byte array로 변경해주는 함수.
-//
-// Args 개 수를 little endian의 uint32형태로 넣고, 각 Arg를 순차적으로 붙인다.
-// 이 때 Arg의 length를 little endian의 uint32형태로 넣고, data 내용을 붙인다.
-func AbiMakeArgs(src [][]byte) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, uint32(len(src)))
-
-	for _, data := range src {
-		bytes := make([]byte, 4)
-		binary.LittleEndian.PutUint32(bytes, uint32(len(data)))
-		res = append(res, bytes...)
-		res = append(res, data...)
-	}
-
-	return res
-}
-
-// AbiBigIntTobytes 는 big.Int 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// big.Int를 byte array로 변환 후 reverse하고, 해당 length를 맨 앞에 추가해준다.
-func AbiBigIntTobytes(src *big.Int) []byte {
-	bytes := ReverseBytes(src.Bytes())
-	res := []byte{byte(len(bytes))}
-	res = append(res, bytes...)
-
-	return res
 }
 
 func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
@@ -197,60 +116,6 @@ func DeployArgsToJsonString(args []*consensus.Deploy_Arg) (string, error) {
 	str += "]"
 
 	return str, nil
-}
-
-func ReverseBytes(src []byte) []byte {
-	len := len(src)
-	for i := 0; i < (len / 2); i++ {
-		tmp := src[i]
-		src[i] = src[len-i-1]
-		src[len-i-1] = tmp
-	}
-
-	return src
-}
-
-// MakeArgsTransferToAccount 는 transfer_to_account.wasm을 사용할 때 Args를 만드는 함수.
-//
-// string의 수신자 address와 amount를 받아 amount를 abi 형태로 만든다.
-// 이 후 2개의 값을 AbiMakeArgs를 통해 하나의 Abi args로 만들어 return 해준다.
-func MakeArgsTransferToAccount(address []byte, amount uint64) []byte {
-	amountAbi := AbiUint64ToBytes(amount)
-	sessionAbiList := [][]byte{address, amountAbi}
-	return AbiMakeArgs(sessionAbiList)
-}
-
-// MakeArgsStandardPayment 는 standard_payment.wasm을 사용할 때 Args를 만드는 함수.
-//
-// big.Int은 amount를 받아 Abi형태로 만들고, AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
-func MakeArgsStandardPayment(amount *big.Int) []byte {
-	paymentAbiList := [][]byte{AbiBigIntTobytes(amount)}
-	paymentAbi := AbiMakeArgs(paymentAbiList)
-	return paymentAbi
-}
-
-// MakeArgsBonding 은 bonding.wasm을 사용할 때 Args를 만드는 함수.
-//
-// uint64의 amount를 받아 Abi형태로 만들고, AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
-func MakeArgsBonding(amount uint64) []byte {
-	abiList := [][]byte{AbiUint64ToBytes(amount)}
-	abi := AbiMakeArgs(abiList)
-	return abi
-}
-
-func MakeArgsStoreBonding(method string, amount uint64, purseId []byte) []byte {
-	abiList := [][]byte{AbiStringToBytes(method), AbiUint64ToBytes(amount), purseId}
-	abi := AbiMakeArgs(abiList)
-	return abi
-}
-
-// MakeArgsUnBonding 은 unbonding.wasm을 사용할 때 Args를 만드는 함수.
-//
-// uint64의 amount를 받아 Abi형태로 만들고, Option Abi를 추가한다. 이 후 AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
-func MakeArgsUnBonding(amount uint64) []byte {
-	abiList := [][]byte{AbiOptionToBytes(AbiUint64ToBytes(amount))}
-	abi := AbiMakeArgs(abiList)
-	return abi
 }
 
 // MakeDeploy 는 address, sessionCode, sessionArgs, paymentCode, paymentArgs, gasPrice, timestamp를 받아 DeployItem을 만들어주는 함수.
