@@ -5,16 +5,15 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
-	"math/big"
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/storedvalue"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -62,157 +61,27 @@ func MakeProtocolVersion(major uint32, minor uint32, patch uint32) *state.Protoc
 	return &state.ProtocolVersion{Major: uint32(major), Minor: uint32(minor), Patch: uint32(patch)}
 }
 
-// AbiUint32ToBytes 는 uint32 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// little endian의 uint32형태로 넣는다.
-func AbiUint32ToBytes(src uint32) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, src)
-	return res
-}
-
-// AbiUint64ToBytes 는 uint64 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// little endian의 uint64형태로 넣는다.
-func AbiUint64ToBytes(src uint64) []byte {
-	res := make([]byte, 8)
-	binary.LittleEndian.PutUint64(res, src)
-	return res
-}
-
-// AbiBytesToBytes 는 byte array 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// byte array의 길이를 little endian의 uint32형태로 넣고, 그 뒤 src 내용을 붙인다.
-func AbiBytesToBytes(src []byte) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, uint32(len(src)))
-	res = append(res, src...)
-	return res
-}
-
-// AbiOptionToBytes 는 byte array 형식에 Abi 형태인 Option을 추가한 byte array로 변경해주는 함수.
-//
-// byte array에서 값이 있으면 앞에 1을 추가하고 없으면 0을 추가한다.
-func AbiOptionToBytes(src []byte) []byte {
-	res := make([]byte, 1)
-	if len(src) > 0 {
-		res[0] = 1
-		res = append(res, src...)
-	}
-
-	return res
-}
-
-// AbiStringToBytes 는 string 형식에 Abi 형태인 byte array로 변경해주는 함수.
-//
-// string의 length를 little endian의 uint32형태로 넣고, src를 utf8인코딩의 byte array로 변환하여 붙인다.
-func AbiStringToBytes(src string) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, uint32(len(src)))
-	res = append(res, []byte(src)...)
-	return res
-}
-
-// AbiMakeArgs 는 deploy에 사용할 Args를 abi 형태인 byte array로 변경해주는 함수.
-//
-// Args 개 수를 little endian의 uint32형태로 넣고, 각 Arg를 순차적으로 붙인다.
-// 이 때 Arg의 length를 little endian의 uint32형태로 넣고, data 내용을 붙인다.
-func AbiMakeArgs(src [][]byte) []byte {
-	res := make([]byte, 4)
-	binary.LittleEndian.PutUint32(res, uint32(len(src)))
-
-	for _, data := range src {
-		bytes := make([]byte, 4)
-		binary.LittleEndian.PutUint32(bytes, uint32(len(data)))
-		res = append(res, bytes...)
-		res = append(res, data...)
-	}
-
-	return res
-}
-
-// AbiBigIntTobytes 는 big.Int 형식을 Abi 형태인 byte array로 변경해주는 함수.
-//
-// big.Int를 byte array로 변환 후 reverse하고, 해당 length를 맨 앞에 추가해준다.
-func AbiBigIntTobytes(src *big.Int) []byte {
-	bytes := reverseBytes(src.Bytes())
-	res := []byte{byte(len(bytes))}
-	res = append(res, bytes...)
-
-	return res
-}
-
 func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 	res := make([]byte, 4)
 	binary.LittleEndian.PutUint32(res, uint32(len(src)))
 
 	for _, deployArg := range src {
-		bytes, err := AbiDeployArgTobytes(deployArg.GetValue())
+		var clValue storedvalue.CLValue
+		clValue, err := clValue.FromDeployArgValue(deployArg.GetValue())
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, bytes...)
+		res = append(res, clValue.ToBytes()...)
 	}
-
-	return res, nil
-}
-
-func AbiDeployArgTobytes(src *consensus.Deploy_Arg_Value) (res []byte, err error) {
-	var data []byte
-	switch src.GetValue().(type) {
-	case *consensus.Deploy_Arg_Value_OptionalValue:
-		optionData, err := AbiDeployArgTobytes(src.GetOptionalValue())
-		if err != nil {
-			return nil, err
-		}
-		optionDataType := len(optionData) - 1
-		data = ToBytes(FromOption(optionData[UINT32_LEN:optionDataType], state.CLType_Simple(optionData[optionDataType])))
-	case *consensus.Deploy_Arg_Value_BytesValue:
-		data = ToBytes(FromFixedList(src.GetBytesValue(), state.CLType_U8))
-	case *consensus.Deploy_Arg_Value_IntValue:
-		data = ToBytes(FromU32(uint32(src.GetIntValue())))
-	case *consensus.Deploy_Arg_Value_IntList:
-		// TODO : Need to test
-		intValues := src.GetIntList().GetValues()
-		for _, value := range intValues {
-			data = append(data, AbiUint32ToBytes(uint32(value))...)
-		}
-	case *consensus.Deploy_Arg_Value_StringValue:
-		data = ToBytes(FromString(src.GetStringValue()))
-	case *consensus.Deploy_Arg_Value_StringList:
-		data = ToBytes(FromStringList(src.GetStringList().GetValues()))
-	case *consensus.Deploy_Arg_Value_LongValue:
-		data = ToBytes(FromU64(uint64(src.GetLongValue())))
-	case *consensus.Deploy_Arg_Value_BigInt:
-		val := new(big.Int)
-		val, ok := val.SetString(src.GetBigInt().GetValue(), 10)
-		if !ok {
-			return nil, errors.New("Bigint data is invalid.")
-		}
-		data = ToBytes(FromU512(val))
-	case *consensus.Deploy_Arg_Value_Key:
-		switch src.GetKey().GetValue().(type) {
-		case *state.Key_Address_:
-			data = append([]byte{WASM}, src.GetKey().GetAddress().GetAccount()...)
-		case *state.Key_Hash_:
-			data = append([]byte{HASH}, src.GetKey().GetHash().GetHash()...)
-		case *state.Key_Uref:
-			data = append([]byte{UREF}, src.GetKey().GetUref().GetUref()...)
-			data = append(data, []byte{byte(src.GetKey().GetUref().GetAccessRights())}...)
-		case *state.Key_Local_:
-			data = append([]byte{LOCAL}, src.GetKey().GetLocal().GetHash()...)
-		default:
-			return nil, errors.New("Key value can only be Address, Hash, Uref, Local value.")
-		}
-	default:
-		return nil, errors.New("Args values can only come with Optional, ByteValue, IntValue, IntList, StringValue, LongValue, and Key values.")
-	}
-	res = append(res, data...)
 
 	return res, nil
 }
 
 func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err error) {
+	if str == "" {
+		return []*consensus.Deploy_Arg{}, nil
+	}
+
 	jsonDecoder := json.NewDecoder(strings.NewReader(str))
 	_, err = jsonDecoder.Token()
 	if err != nil {
@@ -231,58 +100,22 @@ func JsonStringToDeployArgs(str string) (deployArgs []*consensus.Deploy_Arg, err
 	return deployArgs, nil
 }
 
-func reverseBytes(src []byte) []byte {
-	len := len(src)
-	for i := 0; i < (len / 2); i++ {
-		tmp := src[i]
-		src[i] = src[len-i-1]
-		src[len-i-1] = tmp
+func DeployArgsToJsonString(args []*consensus.Deploy_Arg) (string, error) {
+	m := &jsonpb.Marshaler{}
+	str := "["
+	for idx, arg := range args {
+		if idx != 0 {
+			str += ","
+		}
+		s, err := m.MarshalToString(arg)
+		if err != nil {
+			return "", err
+		}
+		str += s
 	}
+	str += "]"
 
-	return src
-}
-
-// MakeArgsTransferToAccount 는 transfer_to_account.wasm을 사용할 때 Args를 만드는 함수.
-//
-// string의 수신자 address와 amount를 받아 amount를 abi 형태로 만든다.
-// 이 후 2개의 값을 AbiMakeArgs를 통해 하나의 Abi args로 만들어 return 해준다.
-func MakeArgsTransferToAccount(address []byte, amount uint64) []byte {
-	amountAbi := AbiUint64ToBytes(amount)
-	sessionAbiList := [][]byte{address, amountAbi}
-	return AbiMakeArgs(sessionAbiList)
-}
-
-// MakeArgsStandardPayment 는 standard_payment.wasm을 사용할 때 Args를 만드는 함수.
-//
-// big.Int은 amount를 받아 Abi형태로 만들고, AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
-func MakeArgsStandardPayment(amount *big.Int) []byte {
-	paymentAbiList := [][]byte{AbiBigIntTobytes(amount)}
-	paymentAbi := AbiMakeArgs(paymentAbiList)
-	return paymentAbi
-}
-
-// MakeArgsBonding 은 bonding.wasm을 사용할 때 Args를 만드는 함수.
-//
-// uint64의 amount를 받아 Abi형태로 만들고, AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
-func MakeArgsBonding(amount uint64) []byte {
-	abiList := [][]byte{AbiUint64ToBytes(amount)}
-	abi := AbiMakeArgs(abiList)
-	return abi
-}
-
-func MakeArgsStoreBonding(method string, amount uint64, purseId []byte) []byte {
-	abiList := [][]byte{AbiStringToBytes(method), AbiUint64ToBytes(amount), purseId}
-	abi := AbiMakeArgs(abiList)
-	return abi
-}
-
-// MakeArgsUnBonding 은 unbonding.wasm을 사용할 때 Args를 만드는 함수.
-//
-// uint64의 amount를 받아 Abi형태로 만들고, Option Abi를 추가한다. 이 후 AbiMakeArgs를 통해 Abi args로 만들어 return 해준다.
-func MakeArgsUnBonding(amount uint64) []byte {
-	abiList := [][]byte{AbiOptionToBytes(AbiUint64ToBytes(amount))}
-	abi := AbiMakeArgs(abiList)
-	return abi
+	return str, nil
 }
 
 // MakeDeploy 는 address, sessionCode, sessionArgs, paymentCode, paymentArgs, gasPrice, timestamp를 받아 DeployItem을 만들어주는 함수.
@@ -294,15 +127,23 @@ func MakeDeploy(
 	fromAddress []byte,
 	sessionType ContractType,
 	sessionData []byte,
-	sessionArgs []*consensus.Deploy_Arg,
+	sessionArgsStr string,
 	paymentType ContractType,
 	paymentData []byte,
-	paymentArgs []*consensus.Deploy_Arg,
+	paymentArgsStr string,
 	gasPrice uint64,
 	int64Timestamp int64,
 	chainName string) (deploy *ipc.DeployItem, err error) {
 	timestamp := uint64(int64Timestamp)
 
+	sessionArgs, err := JsonStringToDeployArgs(sessionArgsStr)
+	if err != nil {
+		return nil, err
+	}
+	paymentArgs, err := JsonStringToDeployArgs(paymentArgsStr)
+	if err != nil {
+		return nil, err
+	}
 	deployBody := &consensus.Deploy_Body{
 		Session: MakeDeployCode(sessionType, sessionData, sessionArgs),
 		Payment: MakeDeployCode(paymentType, paymentData, paymentArgs)}

@@ -8,8 +8,10 @@ import (
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/ipc/transforms"
+	"github.com/hdac-io/casperlabs-ee-grpc-go-util/storedvalue"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 )
 
@@ -43,7 +45,7 @@ func main() {
 	cntDefCode, cntCallCode := loadWasmCode()
 
 	genesisConfig, err := util.GenesisConfigMock(
-		chainName, genesisAddress, "500000000", "1000000", protocolVersion, costs,
+		chainName, genesisAddress, "50000000000000000", "1000000000000000000", protocolVersion, costs,
 		"./example/contracts/mint_install.wasm", "./example/contracts/pos_install.wasm")
 	if err != nil {
 		fmt.Printf("Bad GenesisConfigMock err : %v", err)
@@ -75,8 +77,14 @@ func main() {
 	println(bonds[0].String())
 
 	queryResult10, errMessage := grpc.Query(client, rootStateHash, "address", systemContract, []string{}, protocolVersion)
-	storedValue := util.UnmarshalStoreValue(queryResult10)
-	proxyHash := storedValue.GetAccount().GetNamedKeys()[0].GetKey().GetHash().GetHash()
+	var storedValue storedvalue.StoredValue
+	storedValue.FromBytes(queryResult10)
+	storedValue, err, _ = storedValue.FromBytes(queryResult10)
+	if err != nil {
+		panic(err)
+	}
+
+	proxyHash := storedValue.Account.NamedKeys[0].Key.Hash
 	println("Proxy hash : " + util.EncodeToHexString(proxyHash))
 	println(errMessage)
 
@@ -91,9 +99,13 @@ func main() {
 		&consensus.Deploy_Arg{
 			Name: "fee",
 			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_IntValue{
-					IntValue: 100000000}}}}
-	deploy, _ := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, []*consensus.Deploy_Arg{}, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{Value: "10000000000000000", BitWidth: 512}}}}}
+	paymentArgsStr, err := util.DeployArgsToJsonString(paymentArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ := util.MakeDeploy(genesisAddress, util.WASM, cntDefCode, "", util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys := util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 
@@ -111,7 +123,7 @@ func main() {
 
 	// Run "Counter Call contract"
 	timestamp = time.Now().Unix()
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, "", util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -125,7 +137,11 @@ func main() {
 	// Query counter contract.
 	path := []string{"counter", "count"}
 	queryResult1, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
-	println(util.ToValues(util.UnmarshalStoreValue(queryResult1).GetClValue()).GetIntValue())
+	storedValue, err, _ = storedValue.FromBytes(queryResult1)
+	if err != nil {
+		panic(err)
+	}
+	println(storedValue.ClValue.ToStateValues().GetIntValue())
 	println(errMessage)
 
 	queryResult, errMessage = grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
@@ -133,7 +149,7 @@ func main() {
 	println(errMessage)
 
 	timestamp = time.Now().Unix()
-	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, []*consensus.Deploy_Arg{}, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, "", util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -145,7 +161,8 @@ func main() {
 	println(bonds4[0].String())
 
 	queryResult2, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
-	println(util.ToValues(util.UnmarshalStoreValue(queryResult2).GetClValue()).GetIntValue())
+	storedValue, err, _ = storedValue.FromBytes(queryResult2)
+	println(storedValue.ClValue.ToStateValues().GetIntValue())
 	println(errMessage)
 
 	queryResult3, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
@@ -170,11 +187,14 @@ func main() {
 		&consensus.Deploy_Arg{
 			Name: "amount",
 			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_LongValue{
-					LongValue: int64(10)}}},
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{Value: "10", BitWidth: 512}}}},
 	}
-
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, sessionArgs, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
+	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, sessionArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -204,10 +224,14 @@ func main() {
 		&consensus.Deploy_Arg{
 			Name: "amount",
 			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_LongValue{
-					LongValue: int64(10)}}},
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{Value: "10", BitWidth: 512}}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, bondingArgs, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
+	bondingArgsStr, err := util.DeployArgsToJsonString(bondingArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, bondingArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
@@ -230,10 +254,14 @@ func main() {
 			Value: &consensus.Deploy_Arg_Value{
 				Value: &consensus.Deploy_Arg_Value_OptionalValue{
 					OptionalValue: &consensus.Deploy_Arg_Value{
-						Value: &consensus.Deploy_Arg_Value_LongValue{
-							LongValue: int64(100)}}}}},
+						Value: &consensus.Deploy_Arg_Value_BigInt{
+							BigInt: &state.BigInt{Value: "100", BitWidth: 512}}}}}},
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, unbondingArgs, util.HASH, proxyHash, paymentArgs, uint64(10), timestamp, chainName)
+	unbondingArgsStr, err := util.DeployArgsToJsonString(unbondingArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, unbondingArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
