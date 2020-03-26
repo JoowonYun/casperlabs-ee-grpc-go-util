@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -44,15 +45,16 @@ func main() {
 	// laod wasm code
 	cntDefCode, cntCallCode := loadWasmCode()
 
+	// run genesis
+	println(`RunGenesis`)
 	genesisConfig, err := util.GenesisConfigMock(
-		chainName, genesisAddress, "50000000000000000", "1000000000000000000", protocolVersion, costs,
-		"./example/contracts/mint_install.wasm", "./example/contracts/pos_install.wasm")
+		chainName, genesisAddress, "5000000000000000000", "1000000000000000000", protocolVersion, costs,
+		"./example/contracts/hdac_mint_install.wasm", "./example/contracts/hdac_pos_install.wasm")
 	if err != nil {
 		fmt.Printf("Bad GenesisConfigMock err : %v", err)
 		return
 	}
 
-	//var parentStateHash , effects
 	response, err := grpc.RunGenesis(client, genesisConfig)
 	if err != nil {
 		panic(err)
@@ -73,8 +75,7 @@ func main() {
 	if bytes.Equal(postStateHash, parentStateHash) {
 		rootStateHash = postStateHash
 	}
-	println(util.EncodeToHexString(rootStateHash))
-	println(bonds[0].String())
+	printCommitResult(rootStateHash, bonds)
 
 	queryResult10, errMessage := grpc.Query(client, rootStateHash, "address", systemContract, []string{}, protocolVersion)
 	var storedValue storedvalue.StoredValue
@@ -89,6 +90,7 @@ func main() {
 	println(errMessage)
 
 	// Run "Counter Define contract"
+	println(`Counter Define`)
 	timestamp := time.Now().Unix()
 	paymentArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
@@ -113,15 +115,18 @@ func main() {
 	effects2, err := executeErrorHandler(res)
 
 	postStateHash2, bonds2, errMessage := grpc.Commit(client, rootStateHash, effects2, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
 	rootStateHash = postStateHash2
-	println(util.EncodeToHexString(postStateHash2))
-	println(bonds2[0].String())
+	printCommitResult(rootStateHash, bonds2)
 
 	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(util.EncodeToHexString(genesisAddress), ": ", queryResult)
 	println(errMessage)
 
 	// Run "Counter Call contract"
+	println(`Counter Call`)
 	timestamp = time.Now().Unix()
 	deploy, _ = util.MakeDeploy(genesisAddress, util.WASM, cntCallCode, "", util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
@@ -130,11 +135,14 @@ func main() {
 	effects3, err := executeErrorHandler(res)
 
 	postStateHash3, bonds3, errMessage := grpc.Commit(client, rootStateHash, effects3, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
 	rootStateHash = postStateHash3
-	println(util.EncodeToHexString(postStateHash3))
-	println(bonds3[0].String())
+	printCommitResult(rootStateHash, bonds3)
 
 	// Query counter contract.
+	println(`Counter Query`)
 	path := []string{"counter", "count"}
 	queryResult1, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
 	storedValue, err, _ = storedValue.FromBytes(queryResult1)
@@ -157,8 +165,10 @@ func main() {
 
 	postStateHash4, bonds4, errMessage := grpc.Commit(client, rootStateHash, effects4, protocolVersion)
 	rootStateHash = postStateHash4
-	println(util.EncodeToHexString(postStateHash4))
-	println(bonds4[0].String())
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	printCommitResult(rootStateHash, bonds4)
 
 	queryResult2, errMessage := grpc.Query(client, rootStateHash, "address", genesisAddress, path, protocolVersion)
 	storedValue, err, _ = storedValue.FromBytes(queryResult2)
@@ -170,6 +180,7 @@ func main() {
 	println(errMessage)
 
 	// Run "Send transaction"
+	println(`Send Transaction`)
 	timestamp = time.Now().Unix()
 	address1 := util.DecodeHexString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
 
@@ -188,7 +199,7 @@ func main() {
 			Name: "amount",
 			Value: &consensus.Deploy_Arg_Value{
 				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{Value: "10", BitWidth: 512}}}},
+					BigInt: &state.BigInt{Value: "1000000000000000000", BitWidth: 512}}}},
 	}
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -201,9 +212,11 @@ func main() {
 	effects5, err := executeErrorHandler(res)
 
 	postStateHash5, bonds5, errMessage := grpc.Commit(client, rootStateHash, effects5, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
 	rootStateHash = postStateHash5
-	println(util.EncodeToHexString(postStateHash5))
-	println(bonds5[0].String())
+	printCommitResult(rootStateHash, bonds5)
 
 	queryResult4, errMessage := grpc.QueryBalance(client, rootStateHash, genesisAddress, protocolVersion)
 	println(util.EncodeToHexString(genesisAddress), ": ", queryResult4)
@@ -214,6 +227,7 @@ func main() {
 	println(errMessage)
 
 	// bonding
+	println(`Bonding`)
 	timestamp = time.Now().Unix()
 	bondingArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
@@ -225,23 +239,185 @@ func main() {
 			Name: "amount",
 			Value: &consensus.Deploy_Arg_Value{
 				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{Value: "10", BitWidth: 512}}}},
+					BigInt: &state.BigInt{Value: "10000000000000000", BitWidth: 512}}}},
 	}
 	bondingArgsStr, err := util.DeployArgsToJsonString(bondingArgs)
 	if err != nil {
 		panic(err)
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, bondingArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, bondingArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 	effects6, err := executeErrorHandler(res)
 	postStateHash6, bonds6, errMessage := grpc.Commit(client, rootStateHash, effects6, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
 	rootStateHash = postStateHash6
-	println(util.EncodeToHexString(rootStateHash))
-	println(bonds6[0].String())
+	printCommitResult(rootStateHash, bonds6)
+
+	println(`delegateion`)
+	delegationArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "delegate"}}},
+		&consensus.Deploy_Arg{
+			Name: "validator",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BytesValue{
+					BytesValue: genesisAddress,
+				},
+			},
+		},
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{
+						Value:    "100",
+						BitWidth: 512,
+					},
+				},
+			},
+		},
+	}
+	delegationArgsStr, err := util.DeployArgsToJsonString(delegationArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, delegationArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects, err = executeErrorHandler(res)
+	if err != nil {
+		println(err.Error())
+	}
+	postStateHash, bonds, errMessage = grpc.Commit(client, rootStateHash, effects, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	rootStateHash = postStateHash
+	printCommitResult(rootStateHash, bonds)
+
+	queryResult11, errMessage := grpc.Query(client, rootStateHash, "address", address1, []string{"pos"}, protocolVersion)
+	var storedValue1 storedvalue.StoredValue
+	storedValue1.FromBytes(queryResult11)
+	storedValue1, err, _ = storedValue1.FromBytes(queryResult11)
+	if err != nil {
+		panic(err)
+	}
+
+	println(`redelegateion`)
+	redelegationArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "redelegate"}}},
+		&consensus.Deploy_Arg{
+			Name: "src",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BytesValue{
+					BytesValue: genesisAddress,
+				},
+			},
+		},
+		&consensus.Deploy_Arg{
+			Name: "dest",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BytesValue{
+					BytesValue: address1,
+				},
+			},
+		},
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{
+						Value:    "50",
+						BitWidth: 512,
+					},
+				},
+			},
+		},
+	}
+
+	redelegationArgsStr, err := util.DeployArgsToJsonString(redelegationArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, redelegationArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects, err = executeErrorHandler(res)
+	if err != nil {
+		println(err.Error())
+	}
+	postStateHash, bonds, errMessage = grpc.Commit(client, rootStateHash, effects, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	rootStateHash = postStateHash
+	printCommitResult(rootStateHash, bonds)
+
+	println(`undelegateion`)
+	undelegationArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "undelegate"}}},
+		&consensus.Deploy_Arg{
+			Name: "validator",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BytesValue{
+					BytesValue: address1,
+				},
+			},
+		},
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_OptionalValue{
+					OptionalValue: &consensus.Deploy_Arg_Value{
+						Value: &consensus.Deploy_Arg_Value_BigInt{
+							BigInt: &state.BigInt{
+								Value:    "50",
+								BitWidth: 512,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	undelegationArgsStr, err := util.DeployArgsToJsonString(undelegationArgs)
+	if err != nil {
+		println(err)
+	}
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, undelegationArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects, err = executeErrorHandler(res)
+	if err != nil {
+		println(err.Error())
+	}
+	postStateHash, bonds, errMessage = grpc.Commit(client, rootStateHash, effects, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	rootStateHash = postStateHash
+	printCommitResult(rootStateHash, bonds)
 
 	// unbonding
+	println(`Unbonding`)
 	timestamp = time.Now().Unix()
 	unbondingArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
@@ -261,17 +437,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	deploy, _ = util.MakeDeploy(genesisAddress, util.HASH, proxyHash, unbondingArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, unbondingArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
 	deploys = util.MakeInitDeploys()
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 	effects7, err := executeErrorHandler(res)
 	postStateHash7, bonds7, errMessage := grpc.Commit(client, rootStateHash, effects7, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
 	rootStateHash = postStateHash7
-	println(util.EncodeToHexString(rootStateHash))
-	println(bonds7[0].String())
+	printCommitResult(rootStateHash, bonds7)
 
 	// Upgrade costs data..
+	println(`Upgrade`)
 	costs["regular"] = 2
 	nextProtocolVersion := util.MakeProtocolVersion(2, 0, 0)
 	postStateHash8, effects8, errMessage := grpc.Upgrade(client, rootStateHash, cntDefCode, costs, protocolVersion, nextProtocolVersion)
@@ -280,8 +459,7 @@ func main() {
 		rootStateHash = postStateHash8
 		protocolVersion = nextProtocolVersion
 	}
-	println(util.EncodeToHexString(rootStateHash))
-	println(bonds8[0].String())
+	printCommitResult(rootStateHash, bonds8)
 }
 
 func loadWasmCode() (cntDefCode []byte, cntCallCode []byte) {
@@ -313,4 +491,12 @@ func executeErrorHandler(r *ipc.ExecuteResponse) (effects []*transforms.Transfor
 	}
 
 	return effects, err
+}
+
+func printCommitResult(stateHash []byte, bonds []*ipc.Bond) {
+	println("State hash : " + hex.EncodeToString(stateHash))
+	for _, bond := range bonds {
+		println(hex.EncodeToString(bond.ValidatorPublicKey) + " : " + bond.GetStake().GetValue())
+	}
+	println()
 }
