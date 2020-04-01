@@ -209,7 +209,7 @@ func (n NamedKey) FromStateValue(state *state.NamedKey) (NamedKey, error) {
 	return NewNamedKey(state.GetName(), key), nil
 }
 
-type NamedKeys []*NamedKey
+type NamedKeys []NamedKey
 
 const (
 	VALIDATOR_PREFIX_POS = iota
@@ -225,11 +225,21 @@ const (
 )
 
 const (
+	VOTE_PREFIX_POS = iota
+	VOTE_USER_POS
+	VOTE_DAPP_POS
+	VOTE_AMOUNT_POS
+)
+
+const (
 	VALIDATOR_PREFIX = "v"
 	VALIDATOR_LENGTH = 3
 
 	DELEGATE_PREFIX = "d"
 	DELEGATE_LENGTH = 4
+
+	VOTE_PREFIX = "a"
+	VOTE_LENGTH = 4
 )
 
 func (ns NamedKeys) GetAllValidators() map[string]string {
@@ -291,4 +301,43 @@ func (ns NamedKeys) GetDelegateFromDelegator(address []byte) map[string]string {
 	}
 
 	return delegators
+}
+
+func (ns NamedKeys) GetVotingUserFromDapp(address []byte) map[string]string {
+	users := map[string]string{}
+	addressStr := hex.EncodeToString(address)
+	addressStr = "01" + addressStr
+
+	for _, user := range ns {
+		values := strings.Split(user.Name, "_")
+
+		if values[VOTE_PREFIX_POS] != VOTE_PREFIX {
+			continue
+		}
+
+		if values[VOTE_DAPP_POS] == addressStr {
+			users[values[VOTE_USER_POS]] = values[VOTE_AMOUNT_POS]
+		}
+	}
+
+	return users
+}
+
+func (ns NamedKeys) GetVotingDappFromUser(address []byte) map[string]string {
+	dapps := map[string]string{}
+	addressStr := hex.EncodeToString(address)
+
+	for _, dapp := range ns {
+		values := strings.Split(dapp.Name, "_")
+
+		if values[VOTE_PREFIX_POS] != VOTE_PREFIX {
+			continue
+		}
+
+		if values[VOTE_USER_POS] == addressStr {
+			dapps[values[VOTE_DAPP_POS]] = values[VOTE_AMOUNT_POS]
+		}
+	}
+
+	return dapps
 }

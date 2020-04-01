@@ -19,13 +19,13 @@ const (
 
 type Account struct {
 	PublicKey        []byte
-	NamedKeys        []NamedKey
+	NamedKeys        NamedKeys
 	PurseId          URef
 	AssociatedKeys   []AssociatedKey
 	ActionThresholds ActionThresholds
 }
 
-func NewAccount(publicKey []byte, namedKeys []NamedKey, purseID URef, associatedKeys []AssociatedKey, actionThresholds ActionThresholds) Account {
+func NewAccount(publicKey []byte, namedKeys NamedKeys, purseID URef, associatedKeys []AssociatedKey, actionThresholds ActionThresholds) Account {
 	return Account{
 		PublicKey:        publicKey,
 		NamedKeys:        namedKeys,
@@ -41,7 +41,7 @@ func (a Account) FromBytes(src []byte) (account Account, err error, pos int) {
 	pos += ADDRESS_LENGTH
 
 	// NamedKeys
-	namedKeys := []NamedKey{}
+	namedKeys := NamedKeys{}
 	namedKeysSizeBytes := src[pos : pos+SIZE_LENGTH]
 	pos += SIZE_LENGTH
 	namedKeysSize := int(binary.LittleEndian.Uint32(namedKeysSizeBytes))

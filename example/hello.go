@@ -49,7 +49,7 @@ func main() {
 	println(`RunGenesis`)
 	genesisConfig, err := util.GenesisConfigMock(
 		chainName, genesisAddress, "5000000000000000000", "1000000000000000000", protocolVersion, costs,
-		"./example/contracts/hdac_mint_install.wasm", "./example/contracts/hdac_pos_install.wasm")
+		"./example/contracts/hdac_mint_install.wasm", "./example/contracts/pop_install.wasm")
 	if err != nil {
 		fmt.Printf("Bad GenesisConfigMock err : %v", err)
 		return
@@ -409,6 +409,9 @@ func main() {
 	if err != nil {
 		println(err.Error())
 	}
+	if err != nil {
+		println(err.Error())
+	}
 	postStateHash, bonds, errMessage = grpc.Commit(client, rootStateHash, effects, protocolVersion)
 	if errMessage != "" {
 		panic(errMessage)
@@ -442,12 +445,130 @@ func main() {
 	deploys = util.AddDeploy(deploys, deploy)
 	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
 	effects7, err := executeErrorHandler(res)
+	if err != nil {
+		println(err.Error())
+	}
 	postStateHash7, bonds7, errMessage := grpc.Commit(client, rootStateHash, effects7, protocolVersion)
 	if errMessage != "" {
 		panic(errMessage)
 	}
 	rootStateHash = postStateHash7
 	printCommitResult(rootStateHash, bonds7)
+
+	// Voting
+	println(`Vote`)
+	timestamp = time.Now().Unix()
+	voteArgs := []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "vote"}}},
+		&consensus.Deploy_Arg{
+			Name: "hash",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_Key{
+					Key: &state.Key{Value: &state.Key_Hash_{
+						Hash: &state.Key_Hash{
+							Hash: address1,
+						},
+					}},
+				}}},
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_BigInt{
+					BigInt: &state.BigInt{Value: "9999999999999800", BitWidth: 512}}}},
+	}
+	voteArgsStr, err := util.DeployArgsToJsonString(voteArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, voteArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects7, err = executeErrorHandler(res)
+	if err != nil {
+		println(err.Error())
+	}
+	postStateHash7, bonds7, errMessage = grpc.Commit(client, rootStateHash, effects7, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	rootStateHash = postStateHash7
+	printCommitResult(rootStateHash, bonds7)
+
+	// Voting res
+	queryResult10, errMessage = grpc.Query(client, rootStateHash, "address", systemContract, []string{"pos"}, protocolVersion)
+	var storedValue20 storedvalue.StoredValue
+	storedValue20.FromBytes(queryResult10)
+	storedValue20, err, _ = storedValue20.FromBytes(queryResult10)
+	if err != nil {
+		panic(err)
+	}
+	users := storedValue20.Contract.NamedKeys.GetVotingDappFromUser(address1)
+	for user, value := range users {
+		println(user + " : " + value)
+	}
+
+	// Unvoting
+	println(`Unvote`)
+	timestamp = time.Now().Unix()
+	voteArgs = []*consensus.Deploy_Arg{
+		&consensus.Deploy_Arg{
+			Name: "method",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_StringValue{
+					StringValue: "unvote"}}},
+		&consensus.Deploy_Arg{
+			Name: "hash",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_Key{
+					Key: &state.Key{Value: &state.Key_Hash_{
+						Hash: &state.Key_Hash{
+							Hash: address1,
+						},
+					}},
+				}}},
+		&consensus.Deploy_Arg{
+			Name: "amount",
+			Value: &consensus.Deploy_Arg_Value{
+				Value: &consensus.Deploy_Arg_Value_OptionalValue{
+					OptionalValue: &consensus.Deploy_Arg_Value{
+						Value: &consensus.Deploy_Arg_Value_BigInt{
+							BigInt: &state.BigInt{Value: "90", BitWidth: 512}}}}}}}
+	voteArgsStr, err = util.DeployArgsToJsonString(voteArgs)
+	if err != nil {
+		panic(err)
+	}
+	deploy, _ = util.MakeDeploy(address1, util.HASH, proxyHash, voteArgsStr, util.HASH, proxyHash, paymentArgsStr, uint64(10), timestamp, chainName)
+	deploys = util.MakeInitDeploys()
+	deploys = util.AddDeploy(deploys, deploy)
+	res, err = grpc.Execute(client, rootStateHash, timestamp, deploys, protocolVersion)
+	effects7, err = executeErrorHandler(res)
+	if err != nil {
+		println(err.Error())
+	}
+	postStateHash7, bonds7, errMessage = grpc.Commit(client, rootStateHash, effects7, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	rootStateHash = postStateHash7
+	printCommitResult(rootStateHash, bonds7)
+
+	// Unvoting res
+	queryResult10, errMessage = grpc.Query(client, rootStateHash, "address", systemContract, []string{"pos"}, protocolVersion)
+	var storedValue10 storedvalue.StoredValue
+	storedValue10.FromBytes(queryResult10)
+	storedValue10, err, _ = storedValue10.FromBytes(queryResult10)
+	if err != nil {
+		panic(err)
+	}
+	users = storedValue10.Contract.NamedKeys.GetVotingDappFromUser(address1)
+	for user, value := range users {
+		println(user + " : " + value)
+	}
 
 	// Upgrade costs data..
 	println(`Upgrade`)

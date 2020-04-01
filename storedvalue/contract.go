@@ -16,11 +16,11 @@ const (
 
 type Contract struct {
 	Body            []byte          `json:"body"`
-	NamedKeys       []NamedKey      `json:"named_key"`
+	NamedKeys       NamedKeys       `json:"named_keys"`
 	ProtocolVersion ProtocolVersion `json:"protocol_version"`
 }
 
-func NewContract(body []byte, namedKeys []NamedKey, protocolVersion ProtocolVersion) Contract {
+func NewContract(body []byte, namedKeys NamedKeys, protocolVersion ProtocolVersion) Contract {
 	return Contract{
 		Body:            body,
 		NamedKeys:       namedKeys,
@@ -37,7 +37,7 @@ func (c Contract) FromBytes(src []byte) (contract Contract, err error, pos int) 
 	pos += bodySize
 
 	// NamedKeys
-	namedKeys := []NamedKey{}
+	namedKeys := NamedKeys{}
 	namedKeysSizeBytes := src[pos : pos+SIZE_LENGTH]
 	pos += SIZE_LENGTH
 	namedKeysSize := int(binary.LittleEndian.Uint32(namedKeysSizeBytes))
