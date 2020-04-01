@@ -1,8 +1,11 @@
 package storedvalue
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 )
@@ -148,4 +151,193 @@ func (k Key) FromStateValue(key *state.Key) (Key, error) {
 	}
 
 	return k, nil
+}
+
+type NamedKey struct {
+	Name string `json:"name"`
+	Key  Key    `json:"key"`
+}
+
+func NewNamedKey(name string, key Key) NamedKey {
+	return NamedKey{
+		Name: name,
+		Key:  key,
+	}
+}
+
+func (n NamedKey) FromBytes(src []byte) (namedKey NamedKey, err error, pos int) {
+	pos = 0
+	nameLength := int(binary.LittleEndian.Uint32(src[pos:SIZE_LENGTH]))
+	pos += SIZE_LENGTH
+
+	name := string(src[pos : pos+nameLength])
+	pos += nameLength
+
+	var key Key
+	key, err, length := key.FromBytes(src[pos:])
+	pos += length
+	if err != nil {
+		return NamedKey{}, err, pos
+	}
+
+	return NewNamedKey(name, key), nil, pos
+}
+
+func (n NamedKey) ToBytes() []byte {
+	res := make([]byte, SIZE_LENGTH)
+	binary.BigEndian.PutUint32(res, uint32(len(n.Name)))
+	res = append(res, []byte(n.Name)...)
+
+	res = append(res, n.Key.ToBytes()...)
+
+	return res
+}
+
+func (n NamedKey) ToStateValue() *state.NamedKey {
+	return &state.NamedKey{
+		Name: n.Name,
+		Key:  n.Key.ToStateValue(),
+	}
+}
+
+func (n NamedKey) FromStateValue(state *state.NamedKey) (NamedKey, error) {
+	var key Key
+	key, err := key.FromStateValue(state.GetKey())
+	if err != nil {
+		return NamedKey{}, err
+	}
+	return NewNamedKey(state.GetName(), key), nil
+}
+
+type NamedKeys []NamedKey
+
+const (
+	VALIDATOR_PREFIX_POS = iota
+	VALIDATOR_ADDRESS_POS
+	VALIDATOR_STAKE_POS
+)
+
+const (
+	DELEGATOR_PREFIX_POS = iota
+	DELEGATOR_VALIDATOR_POS
+	DELEGATOR_DELEGATOR_POS
+	DELEGATOR_STAKE_POS
+)
+
+const (
+	VOTE_PREFIX_POS = iota
+	VOTE_USER_POS
+	VOTE_DAPP_POS
+	VOTE_AMOUNT_POS
+)
+
+const (
+	VALIDATOR_PREFIX = "v"
+	VALIDATOR_LENGTH = 3
+
+	DELEGATE_PREFIX = "d"
+	DELEGATE_LENGTH = 4
+
+	VOTE_PREFIX = "a"
+	VOTE_LENGTH = 4
+)
+
+func (ns NamedKeys) GetAllValidators() map[string]string {
+	validators := map[string]string{}
+
+	for _, validator := range ns {
+		values := strings.Split(validator.Name, "_")
+
+		if values[VALIDATOR_PREFIX_POS] != VALIDATOR_PREFIX {
+			continue
+		}
+
+		validators[values[VALIDATOR_ADDRESS_POS]] = values[VALIDATOR_STAKE_POS]
+	}
+
+	return validators
+}
+
+func (ns NamedKeys) GetValidatorStake(address []byte) string {
+	validators := ns.GetAllValidators()
+	addressStr := hex.EncodeToString(address)
+
+	return validators[addressStr]
+}
+
+func (ns NamedKeys) GetDelegateFromValidator(address []byte) map[string]string {
+	delegators := map[string]string{}
+	addressStr := hex.EncodeToString(address)
+
+	for _, delegator := range ns {
+		values := strings.Split(delegator.Name, "_")
+
+		if values[DELEGATOR_PREFIX_POS] != DELEGATE_PREFIX {
+			continue
+		}
+
+		if values[DELEGATOR_VALIDATOR_POS] == addressStr {
+			delegators[values[DELEGATOR_DELEGATOR_POS]] = values[DELEGATOR_STAKE_POS]
+		}
+	}
+
+	return delegators
+}
+
+func (ns NamedKeys) GetDelegateFromDelegator(address []byte) map[string]string {
+	delegators := map[string]string{}
+	addressStr := hex.EncodeToString(address)
+
+	for _, delegator := range ns {
+		values := strings.Split(delegator.Name, "_")
+
+		if values[DELEGATOR_PREFIX_POS] != DELEGATE_PREFIX {
+			continue
+		}
+
+		if values[DELEGATOR_DELEGATOR_POS] == addressStr {
+			delegators[values[DELEGATOR_VALIDATOR_POS]] = values[DELEGATOR_STAKE_POS]
+		}
+	}
+
+	return delegators
+}
+
+func (ns NamedKeys) GetVotingUserFromDapp(address []byte) map[string]string {
+	users := map[string]string{}
+	addressStr := hex.EncodeToString(address)
+	addressStr = "01" + addressStr
+
+	for _, user := range ns {
+		values := strings.Split(user.Name, "_")
+
+		if values[VOTE_PREFIX_POS] != VOTE_PREFIX {
+			continue
+		}
+
+		if values[VOTE_DAPP_POS] == addressStr {
+			users[values[VOTE_USER_POS]] = values[VOTE_AMOUNT_POS]
+		}
+	}
+
+	return users
+}
+
+func (ns NamedKeys) GetVotingDappFromUser(address []byte) map[string]string {
+	dapps := map[string]string{}
+	addressStr := hex.EncodeToString(address)
+
+	for _, dapp := range ns {
+		values := strings.Split(dapp.Name, "_")
+
+		if values[VOTE_PREFIX_POS] != VOTE_PREFIX {
+			continue
+		}
+
+		if values[VOTE_USER_POS] == addressStr {
+			dapps[values[VOTE_DAPP_POS]] = values[VOTE_AMOUNT_POS]
+		}
+	}
+
+	return dapps
 }

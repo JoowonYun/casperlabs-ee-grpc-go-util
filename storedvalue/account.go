@@ -19,13 +19,13 @@ const (
 
 type Account struct {
 	PublicKey        []byte
-	NamedKeys        []NamedKey
+	NamedKeys        NamedKeys
 	PurseId          URef
 	AssociatedKeys   []AssociatedKey
 	ActionThresholds ActionThresholds
 }
 
-func NewAccount(publicKey []byte, namedKeys []NamedKey, purseID URef, associatedKeys []AssociatedKey, actionThresholds ActionThresholds) Account {
+func NewAccount(publicKey []byte, namedKeys NamedKeys, purseID URef, associatedKeys []AssociatedKey, actionThresholds ActionThresholds) Account {
 	return Account{
 		PublicKey:        publicKey,
 		NamedKeys:        namedKeys,
@@ -41,7 +41,7 @@ func (a Account) FromBytes(src []byte) (account Account, err error, pos int) {
 	pos += ADDRESS_LENGTH
 
 	// NamedKeys
-	namedKeys := []NamedKey{}
+	namedKeys := NamedKeys{}
 	namedKeysSizeBytes := src[pos : pos+SIZE_LENGTH]
 	pos += SIZE_LENGTH
 	namedKeysSize := int(binary.LittleEndian.Uint32(namedKeysSizeBytes))
@@ -157,62 +157,6 @@ func (a Account) FromStateValue(state *state.Account) (Account, error) {
 		NewURef(state.GetPurseId().GetUref(), state.GetPurseId().GetAccessRights()),
 		associatedKeys,
 		NewActionThresholds(state.ActionThresholds.GetDeploymentThreshold(), state.ActionThresholds.GetKeyManagementThreshold())), nil
-}
-
-type NamedKey struct {
-	Name string `json:"name"`
-	Key  Key    `json:"key"`
-}
-
-func NewNamedKey(name string, key Key) NamedKey {
-	return NamedKey{
-		Name: name,
-		Key:  key,
-	}
-}
-
-func (n NamedKey) FromBytes(src []byte) (namedKey NamedKey, err error, pos int) {
-	pos = 0
-	nameLength := int(binary.LittleEndian.Uint32(src[pos:SIZE_LENGTH]))
-	pos += SIZE_LENGTH
-
-	name := string(src[pos : pos+nameLength])
-	pos += nameLength
-
-	var key Key
-	key, err, length := key.FromBytes(src[pos:])
-	pos += length
-	if err != nil {
-		return NamedKey{}, err, pos
-	}
-
-	return NewNamedKey(name, key), nil, pos
-}
-
-func (n NamedKey) ToBytes() []byte {
-	res := make([]byte, SIZE_LENGTH)
-	binary.BigEndian.PutUint32(res, uint32(len(n.Name)))
-	res = append(res, []byte(n.Name)...)
-
-	res = append(res, n.Key.ToBytes()...)
-
-	return res
-}
-
-func (n NamedKey) ToStateValue() *state.NamedKey {
-	return &state.NamedKey{
-		Name: n.Name,
-		Key:  n.Key.ToStateValue(),
-	}
-}
-
-func (n NamedKey) FromStateValue(state *state.NamedKey) (NamedKey, error) {
-	var key Key
-	key, err := key.FromStateValue(state.GetKey())
-	if err != nil {
-		return NamedKey{}, err
-	}
-	return NewNamedKey(state.GetName(), key), nil
 }
 
 type AssociatedKey struct {
