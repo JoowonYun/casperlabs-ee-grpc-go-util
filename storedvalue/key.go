@@ -306,7 +306,6 @@ func (ns NamedKeys) GetDelegateFromDelegator(address []byte) map[string]string {
 func (ns NamedKeys) GetVotingUserFromDapp(address []byte) map[string]string {
 	users := map[string]string{}
 	addressStr := hex.EncodeToString(address)
-	addressStr = "01" + addressStr
 
 	for _, user := range ns {
 		values := strings.Split(user.Name, "_")
