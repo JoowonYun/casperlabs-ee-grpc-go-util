@@ -186,10 +186,8 @@ func TestNamedKeysGetDelegateFromValidator(t *testing.T) {
 
 	delegators := namedkeys.GetDelegateFromValidator(address)
 
-	assert.Equal(t, 3, len(delegators))
+	assert.Equal(t, 1, len(delegators))
 	assert.Equal(t, "1000000000000000000", delegators["d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"])
-	assert.Equal(t, "2000000000000000000", delegators["51f1ddda0933696150cf78fe7a2141653e6a841d2f4ecaaa915a299cb7a4d19c"])
-	assert.Equal(t, "3000000000000000000", delegators["93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"])
 }
 
 func TestNamedKeysGetDelegateFromDelegators(t *testing.T) {
@@ -202,12 +200,12 @@ func TestNamedKeysGetDelegateFromDelegators(t *testing.T) {
 		NamedKey{Name: "d_93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915_51f1ddda0933696150cf78fe7a2141653e6a841d2f4ecaaa915a299cb7a4d19c_2000000000000000000", Key: Key{}},
 		NamedKey{Name: "d_d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84_51f1ddda0933696150cf78fe7a2141653e6a841d2f4ecaaa915a299cb7a4d19c_3000000000000000000", Key: Key{}},
 	}
-	address, err := hex.DecodeString("51f1ddda0933696150cf78fe7a2141653e6a841d2f4ecaaa915a299cb7a4d19c")
+	address, err := hex.DecodeString("93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915")
 	assert.NoError(t, err)
 
 	delegators := namedkeys.GetDelegateFromDelegator(address)
 
 	assert.Equal(t, 2, len(delegators))
-	assert.Equal(t, "2000000000000000000", delegators["93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"])
-	assert.Equal(t, "3000000000000000000", delegators["d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"])
+	assert.Equal(t, "1000000000000000000", delegators["93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"])
+	assert.Equal(t, "2000000000000000000", delegators["51f1ddda0933696150cf78fe7a2141653e6a841d2f4ecaaa915a299cb7a4d19c"])
 }
