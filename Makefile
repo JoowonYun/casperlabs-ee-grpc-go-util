@@ -18,6 +18,6 @@ proto:
 	protoc -I protobuf protobuf/io/casperlabs/ipc/transforms/transforms.proto --gogo_out=plugins=grpc:$$GOPATH/src
 	protoc -I protobuf protobuf/io/casperlabs/ipc/ipc.proto --gogo_out=plugins=grpc:$$GOPATH/src
 
-.PHONY: example
-example:
-	go run ./example/hello.go
+.PHONY: integration-tests
+integration-tests:
+	go test ./integration

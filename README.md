@@ -34,16 +34,15 @@ func main() {
     client := grpc.Connect(`/.casperlabs/.casper-node.sock`)
 
 	mintTokenCode := util.LoadWasmFile("./example/contracts/mint_token.wasm")
-
-	mintResult := grpc.Validate(client, mintCode)
 }
 ```
 
-## Running Example code
+## Running integration test
 - Revise to unix socket path in "./example/hello.go"
+- $ ./target/debug/casperlabs-engine-grpc-server ~/.casperlabs/.casper-node.sock
 - Run
 ```bash
-$ make example
+$ make integration-test
 ```
 
 ## Testing
