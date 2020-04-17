@@ -232,6 +232,18 @@ const (
 )
 
 const (
+	COMMISSION_PREFIX_POS = iota
+	COMMISSION_VALIDATOR_POS
+	COMMISSION_AMOUNT_POS
+)
+
+const (
+	REWARD_PREFIX_POS = iota
+	REWARD_VALIDATOR_POS
+	REWARD_AMOUNT_POS
+)
+
+const (
 	VALIDATOR_PREFIX = "v"
 	VALIDATOR_LENGTH = 3
 
@@ -240,6 +252,12 @@ const (
 
 	VOTE_PREFIX = "a"
 	VOTE_LENGTH = 4
+
+	COMMISSION_PREFIX = "c"
+	COMMISSION_LENGTH = 3
+
+	REWARD_PREFIX = "r"
+	REWARD_LENGTH = 3
 )
 
 func (ns NamedKeys) GetAllValidators() map[string]string {
@@ -339,4 +357,40 @@ func (ns NamedKeys) GetVotingDappFromUser(address []byte) map[string]string {
 	}
 
 	return dapps
+}
+
+func (ns NamedKeys) GetValidatorCommission(address []byte) string {
+	addressStr := hex.EncodeToString(address)
+
+	for _, namedkey := range ns {
+		values := strings.Split(namedkey.Name, "_")
+
+		if values[COMMISSION_PREFIX_POS] != COMMISSION_PREFIX {
+			continue
+		}
+
+		if values[COMMISSION_VALIDATOR_POS] == addressStr {
+			return values[COMMISSION_AMOUNT_POS]
+		}
+	}
+
+	return ""
+}
+
+func (ns NamedKeys) GetUserReward(address []byte) string {
+	addressStr := hex.EncodeToString(address)
+
+	for _, namedkey := range ns {
+		values := strings.Split(namedkey.Name, "_")
+
+		if values[REWARD_PREFIX_POS] != REWARD_PREFIX {
+			continue
+		}
+
+		if values[REWARD_VALIDATOR_POS] == addressStr {
+			return values[REWARD_AMOUNT_POS]
+		}
+	}
+
+	return ""
 }
