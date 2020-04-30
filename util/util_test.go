@@ -28,14 +28,14 @@ func TestBlake2b256_LEN_8(t *testing.T) {
 }
 
 func TestJsonStringToDeployArgs(t *testing.T) {
-	inputStr := `[{"name":"amount","value":{"int_value":123456}},{"name":"fee","value":{"int_value":54321}}]`
+	inputStr := `[{"name":"amount","value":{"value":{"i32":123456}}},{"name":"fee","value":{"value":{"i32":54321}}}]`
 	args, err := JsonStringToDeployArgs(inputStr)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "amount", args[0].GetName())
-	assert.Equal(t, int32(123456), args[0].GetValue().GetIntValue())
+	assert.Equal(t, int32(123456), args[0].GetValue().GetValue().GetI32())
 	assert.Equal(t, "fee", args[1].GetName())
-	assert.Equal(t, int32(54321), args[1].GetValue().GetIntValue())
+	assert.Equal(t, int32(54321), args[1].GetValue().GetValue().GetI32())
 
 	m := &jsonpb.Marshaler{}
 	str := "["
@@ -51,7 +51,7 @@ func TestJsonStringToDeployArgs(t *testing.T) {
 	args2, err := JsonStringToDeployArgs(str)
 	assert.NoError(t, err)
 	assert.Equal(t, args[0].GetName(), args2[0].GetName())
-	assert.Equal(t, args[0].GetValue().GetIntValue(), args2[0].GetValue().GetIntValue())
+	assert.Equal(t, args[0].GetValue().GetValue().GetI32(), args2[0].GetValue().GetValue().GetI32())
 	assert.Equal(t, args[1].GetName(), args2[1].GetName())
-	assert.Equal(t, args[1].GetValue().GetIntValue(), args2[1].GetValue().GetIntValue())
+	assert.Equal(t, args[1].GetValue().GetValue().GetI32(), args2[1].GetValue().GetValue().GetI32())
 }

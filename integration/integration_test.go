@@ -10,7 +10,7 @@ import (
 )
 
 func TestCustomContractCounter(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 
 	// counterDefine
 	rootStateHash, _ = RunCounterDefine(client, rootStateHash, genesisAddress, proxyHash, protocolVersion)
@@ -35,7 +35,7 @@ func TestCustomContractCounter(t *testing.T) {
 }
 
 func TestTransferToAccount(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "900000000000000000"
 
 	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, genesisAddress, address1, amount, proxyHash, protocolVersion)
@@ -46,7 +46,7 @@ func TestTransferToAccount(t *testing.T) {
 }
 
 func TestBond(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	bondAmount := "10000000000000000"
 
 	rootStateHash, bonds := RunBond(client, rootStateHash, genesisAddress, bondAmount, proxyHash, protocolVersion)
@@ -60,7 +60,7 @@ func TestBond(t *testing.T) {
 }
 
 func TestUnbond(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "10000000000000000"
 
 	rootStateHash, bonds := RunUnbond(client, rootStateHash, genesisAddress, amount, proxyHash, protocolVersion)
@@ -74,7 +74,7 @@ func TestUnbond(t *testing.T) {
 }
 
 func TestDelegate(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "100"
 
 	rootStateHash, bonds := RunDelegate(client, rootStateHash, genesisAddress, genesisAddress, amount, proxyHash, protocolVersion)
@@ -87,7 +87,7 @@ func TestDelegate(t *testing.T) {
 }
 
 func TestDelegateFromAnotherAddress(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "100000000000000000"
 	delegateAmount := "1000000000000000"
 
@@ -106,7 +106,7 @@ func TestDelegateFromAnotherAddress(t *testing.T) {
 }
 
 func TestUndelegation(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "100"
 
 	rootStateHash, bonds := RunUndelegate(client, rootStateHash, genesisAddress, genesisAddress, amount, proxyHash, protocolVersion)
@@ -119,7 +119,7 @@ func TestUndelegation(t *testing.T) {
 }
 
 func TestRedelegation(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "100"
 
 	rootStateHash, bonds := RunRedelegate(client, rootStateHash, genesisAddress, genesisAddress, address1, amount, proxyHash, protocolVersion)
@@ -133,7 +133,7 @@ func TestRedelegation(t *testing.T) {
 }
 
 func TestVoteAndUnvote(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "123"
 
 	rootStateHash, _ = RunVote(client, rootStateHash, genesisAddress, address1, amount, proxyHash, protocolVersion)
@@ -156,7 +156,7 @@ func TestVoteAndUnvote(t *testing.T) {
 }
 
 func TestVoteMoreAccount(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	address2 := util.DecodeHexString("03170a2e7597b7b7e3d84c05391d139a62b157e78786d8c082f29dcf4c111314")
 	address3 := util.DecodeHexString("f0f84944e0ccfa9e67383e6a448291787d208c8e46adc849f714078663d1dd36")
 	amount1 := "100"
@@ -186,7 +186,7 @@ func TestVoteMoreAccount(t *testing.T) {
 }
 
 func TestStepAndCommission(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "1000000000000000000"
 
 	// ready to create block
@@ -237,7 +237,7 @@ func TestStepAndCommission(t *testing.T) {
 }
 
 func TestClaimAmount(t *testing.T) {
-	client, rootStateHash, _, proxyHash, protocolVersion := InitalRunGenensis()
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis()
 	amount := "1000000000000000000"
 
 	// ready to create block

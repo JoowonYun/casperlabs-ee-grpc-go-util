@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -30,14 +29,20 @@ func GetPaymentArgsJson(fee string) string {
 	paymentArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "standard_payment"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "standard_payment"}}}},
 		&consensus.Deploy_Arg{
 			Name: "fee",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{Value: fee, BitWidth: 512}}}}}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_U512{
+						U512: &state.CLValueInstance_U512{
+							Value: fee}}}}}}
+
 	paymentArgsStr, err := util.DeployArgsToJsonString(paymentArgs)
 	if err != nil {
 		panic(err)
@@ -45,7 +50,7 @@ func GetPaymentArgsJson(fee string) string {
 	return paymentArgsStr
 }
 
-func InitalRunGenensis() (ipc.ExecutionEngineServiceClient, []byte, []*ipc.Bond, []byte, *state.ProtocolVersion) {
+func InitalRunGenensis() (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
@@ -72,7 +77,7 @@ func InitalRunGenensis() (ipc.ExecutionEngineServiceClient, []byte, []*ipc.Bond,
 	println(`RunGenesis`)
 	genesisConfig, err := util.GenesisConfigMock(
 		chainName, genesisAddress, "5000000000000000000", "1000000000000000000", protocolVersion, costs,
-		"./contracts/hdac_mint_install.wasm", "./contracts/pop_install.wasm")
+		"./contracts/hdac_mint_install.wasm", "./contracts/pop_install.wasm", "./contracts/standard_payment_install.wasm")
 	if err != nil {
 		panic(err)
 	}
@@ -82,24 +87,18 @@ func InitalRunGenensis() (ipc.ExecutionEngineServiceClient, []byte, []*ipc.Bond,
 		panic(err)
 	}
 
-	var parentStateHash []byte
-	var effects []*transforms.TransformEntry
-
 	switch response.GetResult().(type) {
 	case *ipc.GenesisResponse_Success:
-		parentStateHash = response.GetSuccess().GetPoststateHash()
-		effects = response.GetSuccess().GetEffect().GetTransformMap()
+		rootStateHash = response.GetSuccess().GetPoststateHash()
+		// effects = response.GetSuccess().GetEffect().GetTransformMap()
 	case *ipc.GenesisResponse_FailedDeploy:
 		panic(response.GetFailedDeploy().GetMessage())
 	}
 
-	postStateHash, bonds, errMessage := grpc.Commit(client, rootStateHash, effects, protocolVersion)
-	if bytes.Equal(postStateHash, parentStateHash) {
-		rootStateHash = postStateHash
-	}
-	printCommitResult(rootStateHash, bonds)
-
 	queryResult10, errMessage := grpc.Query(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{}, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
 	var storedValue storedvalue.StoredValue
 	storedValue.FromBytes(queryResult10)
 	storedValue, err, _ = storedValue.FromBytes(queryResult10)
@@ -111,7 +110,7 @@ func InitalRunGenensis() (ipc.ExecutionEngineServiceClient, []byte, []*ipc.Bond,
 	println("Proxy hash : " + util.EncodeToHexString(proxyHash))
 	println(errMessage)
 
-	return client, rootStateHash, bonds, proxyHash, protocolVersion
+	return client, rootStateHash, proxyHash, protocolVersion
 }
 
 func RunCounterDefine(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte, proxyHash []byte, protocolVersion *state.ProtocolVersion) (resultStateHash []byte, bonds []*ipc.Bond) {
@@ -132,20 +131,26 @@ func RunTransferToAccount(client ipc.ExecutionEngineServiceClient, stateHash []b
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "transfer_to_account"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "transfer_to_account"}}}},
 		&consensus.Deploy_Arg{
 			Name: "address",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BytesValue{
-					BytesValue: toAddress}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_ListType{ListType: &state.CLType_List{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U8}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_BytesValue{
+						BytesValue: toAddress}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{Value: amount, BitWidth: 512}}}},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_U512{
+						U512: &state.CLValueInstance_U512{
+							Value: amount}}}}}}
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
 		panic(err)
@@ -160,15 +165,19 @@ func RunBond(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddre
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "bond"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "bond"}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{Value: amount, BitWidth: 512}}}},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_U512{
+						U512: &state.CLValueInstance_U512{
+							Value: amount}}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -184,17 +193,22 @@ func RunUnbond(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAdd
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "unbond"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "unbond"}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_OptionalValue{
-					OptionalValue: &consensus.Deploy_Arg_Value{
-						Value: &consensus.Deploy_Arg_Value_BigInt{
-							BigInt: &state.BigInt{Value: amount, BitWidth: 512}}}}}},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_OptionType{OptionType: &state.CLType_Option{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_OptionValue{
+						OptionValue: &state.CLValueInstance_Option{
+							Value: &state.CLValueInstance_Value{
+								Value: &state.CLValueInstance_Value_U512{
+									U512: &state.CLValueInstance_U512{
+										Value: amount}}}}}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -210,29 +224,26 @@ func RunDelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, runA
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "delegate"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "delegate"}}}},
 		&consensus.Deploy_Arg{
 			Name: "validator",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BytesValue{
-					BytesValue: validator,
-				},
-			},
-		},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_ListType{ListType: &state.CLType_List{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U8}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_BytesValue{
+						BytesValue: validator}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{
-						Value:    amount,
-						BitWidth: 512,
-					},
-				},
-			},
-		},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_U512{
+						U512: &state.CLValueInstance_U512{
+							Value: amount}}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -248,33 +259,29 @@ func RunUndelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, ru
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "undelegate"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "undelegate"}}}},
 		&consensus.Deploy_Arg{
 			Name: "validator",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BytesValue{
-					BytesValue: validator,
-				},
-			},
-		},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_ListType{ListType: &state.CLType_List{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U8}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_BytesValue{
+						BytesValue: validator}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_OptionalValue{
-					OptionalValue: &consensus.Deploy_Arg_Value{
-						Value: &consensus.Deploy_Arg_Value_BigInt{
-							BigInt: &state.BigInt{
-								Value:    amount,
-								BitWidth: 512,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_OptionType{OptionType: &state.CLType_Option{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_OptionValue{
+						OptionValue: &state.CLValueInstance_Option{
+							Value: &state.CLValueInstance_Value{
+								Value: &state.CLValueInstance_Value_U512{
+									U512: &state.CLValueInstance_U512{
+										Value: amount}}}}}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -290,37 +297,33 @@ func RunRedelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, ru
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "redelegate"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "redelegate"}}}},
 		&consensus.Deploy_Arg{
 			Name: "src",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BytesValue{
-					BytesValue: srcValidator,
-				},
-			},
-		},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_ListType{ListType: &state.CLType_List{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U8}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_BytesValue{
+						BytesValue: srcValidator}}}},
 		&consensus.Deploy_Arg{
 			Name: "dest",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BytesValue{
-					BytesValue: destValidator,
-				},
-			},
-		},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_ListType{ListType: &state.CLType_List{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U8}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_BytesValue{
+						BytesValue: destValidator}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{
-						Value:    amount,
-						BitWidth: 512,
-					},
-				},
-			},
-		},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_U512{
+						U512: &state.CLValueInstance_U512{
+							Value: amount}}}}}}
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
 		panic(err)
@@ -335,25 +338,26 @@ func RunVote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddre
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "vote"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "vote"}}}},
 		&consensus.Deploy_Arg{
 			Name: "hash",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_Key{
-					Key: &state.Key{Value: &state.Key_Hash_{
-						Hash: &state.Key_Hash{
-							Hash: hash,
-						},
-					}},
-				}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_KEY}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_Key{
+						Key: &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: hash}}}}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_BigInt{
-					BigInt: &state.BigInt{Value: amount, BitWidth: 512}}}},
-	}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_U512{
+						U512: &state.CLValueInstance_U512{
+							Value: amount}}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -369,26 +373,29 @@ func RunUnvote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAdd
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "unvote"}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "unvote"}}}},
 		&consensus.Deploy_Arg{
 			Name: "hash",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_Key{
-					Key: &state.Key{Value: &state.Key_Hash_{
-						Hash: &state.Key_Hash{
-							Hash: hash,
-						},
-					}},
-				}}},
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_KEY}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_Key{
+						Key: &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: hash}}}}}}},
 		&consensus.Deploy_Arg{
 			Name: "amount",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_OptionalValue{
-					OptionalValue: &consensus.Deploy_Arg_Value{
-						Value: &consensus.Deploy_Arg_Value_BigInt{
-							BigInt: &state.BigInt{Value: amount, BitWidth: 512}}}}}}}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_OptionType{OptionType: &state.CLType_Option{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}}}}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_OptionValue{
+						OptionValue: &state.CLValueInstance_Option{
+							Value: &state.CLValueInstance_Value{
+								Value: &state.CLValueInstance_Value_U512{
+									U512: &state.CLValueInstance_U512{
+										Value: amount}}}}}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -403,9 +410,11 @@ func RunStep(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddre
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "step"}}}}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "step"}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -420,9 +429,11 @@ func RunClaimCommission(client ipc.ExecutionEngineServiceClient, stateHash []byt
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "claim_commission"}}}}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "claim_commission"}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
@@ -437,9 +448,11 @@ func RunClaimReward(client ipc.ExecutionEngineServiceClient, stateHash []byte, r
 	sessionArgs := []*consensus.Deploy_Arg{
 		&consensus.Deploy_Arg{
 			Name: "method",
-			Value: &consensus.Deploy_Arg_Value{
-				Value: &consensus.Deploy_Arg_Value_StringValue{
-					StringValue: "claim_reward"}}}}
+			Value: &state.CLValueInstance{
+				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
+				Value: &state.CLValueInstance_Value{
+					Value: &state.CLValueInstance_Value_StrValue{
+						StrValue: "claim_reward"}}}}}
 
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {

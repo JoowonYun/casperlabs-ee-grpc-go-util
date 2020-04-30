@@ -230,7 +230,7 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		return balance, err.Error()
 	}
 	account := storedValue.Account
-	purseID := account.PurseId.Address
+	purseID := account.MainPurse.GetAddress()
 	var mintUref []byte
 	for _, namedKey := range account.NamedKeys {
 		if namedKey.Name == "mint" {
@@ -239,8 +239,8 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 		}
 	}
 
-	resBytes := append(mintUref, purseID...)
-	localBytes := util.Blake2b256(resBytes)
+	hashPurseId := util.Blake2b256(purseID)
+	localBytes := append(mintUref, hashPurseId...)
 
 	res, errMessage = Query(client, stateHash, "local", localBytes, []string{}, protocolVersion)
 	if errMessage != "" {
