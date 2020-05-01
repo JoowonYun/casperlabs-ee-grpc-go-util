@@ -260,6 +260,8 @@ func GenesisConfigMock(
 	accounts[0].BondedAmount = &state.BigInt{Value: bondedAmount, BitWidth: 512}
 	genesisConfig.Accounts = accounts
 
+	genesisConfig.StateInfos = []string{"d_d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84_d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84_" + bondedAmount}
+
 	// CostTable
 	genesisConfig.Costs = &ipc.ChainSpec_CostTable{
 		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
