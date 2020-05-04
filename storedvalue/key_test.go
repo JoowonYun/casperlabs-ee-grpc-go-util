@@ -47,7 +47,7 @@ func TestKeyUrefToBytes(t *testing.T) {
 		[]byte{
 			2,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			1, 7,
+			7,
 		},
 		res)
 }
@@ -100,7 +100,7 @@ func TestKeyUrefFromBytes(t *testing.T) {
 	src := []byte{
 		2,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		1, 7,
+		7,
 	}
 	var k Key
 	k, err, pos := k.FromBytes(src)
