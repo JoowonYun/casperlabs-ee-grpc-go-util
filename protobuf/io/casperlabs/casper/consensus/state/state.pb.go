@@ -83,7 +83,7 @@ func (CLType_Simple) EnumDescriptor() ([]byte, []int) {
 type Key_URef_AccessRights int32
 
 const (
-	Key_URef_UNKNOWN        Key_URef_AccessRights = 0
+	Key_URef_NONE           Key_URef_AccessRights = 0
 	Key_URef_READ           Key_URef_AccessRights = 1
 	Key_URef_WRITE          Key_URef_AccessRights = 2
 	Key_URef_ADD            Key_URef_AccessRights = 4
@@ -94,7 +94,7 @@ const (
 )
 
 var Key_URef_AccessRights_name = map[int32]string{
-	0: "UNKNOWN",
+	0: "NONE",
 	1: "READ",
 	2: "WRITE",
 	4: "ADD",
@@ -105,7 +105,7 @@ var Key_URef_AccessRights_name = map[int32]string{
 }
 
 var Key_URef_AccessRights_value = map[string]int32{
-	"UNKNOWN":        0,
+	"NONE":           0,
 	"READ":           1,
 	"WRITE":          2,
 	"ADD":            4,
@@ -120,7 +120,7 @@ func (x Key_URef_AccessRights) String() string {
 }
 
 func (Key_URef_AccessRights) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{7, 2, 0}
+	return fileDescriptor_bc5c211b7c38b10a, []int{9, 2, 0}
 }
 
 // Fundamental type of a user-facing value stored under a key in global state.
@@ -734,6 +734,932 @@ func (m *CLValue) GetSerializedValue() []byte {
 	return nil
 }
 
+// CLValue where the bytes are re-consistituted as an object
+type CLValueInstance struct {
+	ClType               *CLType                `protobuf:"bytes,1,opt,name=cl_type,json=clType,proto3" json:"cl_type,omitempty"`
+	Value                *CLValueInstance_Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *CLValueInstance) Reset()         { *m = CLValueInstance{} }
+func (m *CLValueInstance) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance) ProtoMessage()    {}
+func (*CLValueInstance) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2}
+}
+func (m *CLValueInstance) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance.Unmarshal(m, b)
+}
+func (m *CLValueInstance) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance.Merge(m, src)
+}
+func (m *CLValueInstance) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance.Size(m)
+}
+func (m *CLValueInstance) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance proto.InternalMessageInfo
+
+func (m *CLValueInstance) GetClType() *CLType {
+	if m != nil {
+		return m.ClType
+	}
+	return nil
+}
+
+func (m *CLValueInstance) GetValue() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+type CLValueInstance_Value struct {
+	// Types that are valid to be assigned to Value:
+	//	*CLValueInstance_Value_BoolValue
+	//	*CLValueInstance_Value_I32
+	//	*CLValueInstance_Value_I64
+	//	*CLValueInstance_Value_U8
+	//	*CLValueInstance_Value_U32
+	//	*CLValueInstance_Value_U64
+	//	*CLValueInstance_Value_U128
+	//	*CLValueInstance_Value_U256
+	//	*CLValueInstance_Value_U512
+	//	*CLValueInstance_Value_Unit
+	//	*CLValueInstance_Value_StrValue
+	//	*CLValueInstance_Value_Key
+	//	*CLValueInstance_Value_Uref
+	//	*CLValueInstance_Value_OptionValue
+	//	*CLValueInstance_Value_ListValue
+	//	*CLValueInstance_Value_FixedListValue
+	//	*CLValueInstance_Value_ResultValue
+	//	*CLValueInstance_Value_MapValue
+	//	*CLValueInstance_Value_Tuple1Value
+	//	*CLValueInstance_Value_Tuple2Value
+	//	*CLValueInstance_Value_Tuple3Value
+	//	*CLValueInstance_Value_BytesValue
+	Value                isCLValueInstance_Value_Value `protobuf_oneof:"value"`
+	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
+	XXX_unrecognized     []byte                        `json:"-"`
+	XXX_sizecache        int32                         `json:"-"`
+}
+
+func (m *CLValueInstance_Value) Reset()         { *m = CLValueInstance_Value{} }
+func (m *CLValueInstance_Value) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Value) ProtoMessage()    {}
+func (*CLValueInstance_Value) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 0}
+}
+func (m *CLValueInstance_Value) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Value.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Value) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Value.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Value) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Value.Merge(m, src)
+}
+func (m *CLValueInstance_Value) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Value.Size(m)
+}
+func (m *CLValueInstance_Value) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Value.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Value proto.InternalMessageInfo
+
+type isCLValueInstance_Value_Value interface {
+	isCLValueInstance_Value_Value()
+}
+
+type CLValueInstance_Value_BoolValue struct {
+	BoolValue bool `protobuf:"varint,1,opt,name=bool_value,json=boolValue,proto3,oneof" json:"bool_value,omitempty"`
+}
+type CLValueInstance_Value_I32 struct {
+	I32 int32 `protobuf:"varint,2,opt,name=i32,proto3,oneof" json:"i32,omitempty"`
+}
+type CLValueInstance_Value_I64 struct {
+	I64 int64 `protobuf:"varint,3,opt,name=i64,proto3,oneof" json:"i64,omitempty"`
+}
+type CLValueInstance_Value_U8 struct {
+	U8 int32 `protobuf:"varint,4,opt,name=u8,proto3,oneof" json:"u8,omitempty"`
+}
+type CLValueInstance_Value_U32 struct {
+	U32 uint32 `protobuf:"varint,5,opt,name=u32,proto3,oneof" json:"u32,omitempty"`
+}
+type CLValueInstance_Value_U64 struct {
+	U64 uint64 `protobuf:"varint,6,opt,name=u64,proto3,oneof" json:"u64,omitempty"`
+}
+type CLValueInstance_Value_U128 struct {
+	U128 *CLValueInstance_U128 `protobuf:"bytes,7,opt,name=u128,proto3,oneof" json:"u128,omitempty"`
+}
+type CLValueInstance_Value_U256 struct {
+	U256 *CLValueInstance_U256 `protobuf:"bytes,8,opt,name=u256,proto3,oneof" json:"u256,omitempty"`
+}
+type CLValueInstance_Value_U512 struct {
+	U512 *CLValueInstance_U512 `protobuf:"bytes,9,opt,name=u512,proto3,oneof" json:"u512,omitempty"`
+}
+type CLValueInstance_Value_Unit struct {
+	Unit *Unit `protobuf:"bytes,10,opt,name=unit,proto3,oneof" json:"unit,omitempty"`
+}
+type CLValueInstance_Value_StrValue struct {
+	StrValue string `protobuf:"bytes,11,opt,name=str_value,json=strValue,proto3,oneof" json:"str_value,omitempty"`
+}
+type CLValueInstance_Value_Key struct {
+	Key *Key `protobuf:"bytes,12,opt,name=key,proto3,oneof" json:"key,omitempty"`
+}
+type CLValueInstance_Value_Uref struct {
+	Uref *Key_URef `protobuf:"bytes,13,opt,name=uref,proto3,oneof" json:"uref,omitempty"`
+}
+type CLValueInstance_Value_OptionValue struct {
+	OptionValue *CLValueInstance_Option `protobuf:"bytes,14,opt,name=option_value,json=optionValue,proto3,oneof" json:"option_value,omitempty"`
+}
+type CLValueInstance_Value_ListValue struct {
+	ListValue *CLValueInstance_List `protobuf:"bytes,15,opt,name=list_value,json=listValue,proto3,oneof" json:"list_value,omitempty"`
+}
+type CLValueInstance_Value_FixedListValue struct {
+	FixedListValue *CLValueInstance_FixedList `protobuf:"bytes,16,opt,name=fixed_list_value,json=fixedListValue,proto3,oneof" json:"fixed_list_value,omitempty"`
+}
+type CLValueInstance_Value_ResultValue struct {
+	ResultValue *CLValueInstance_Result `protobuf:"bytes,17,opt,name=result_value,json=resultValue,proto3,oneof" json:"result_value,omitempty"`
+}
+type CLValueInstance_Value_MapValue struct {
+	MapValue *CLValueInstance_Map `protobuf:"bytes,18,opt,name=map_value,json=mapValue,proto3,oneof" json:"map_value,omitempty"`
+}
+type CLValueInstance_Value_Tuple1Value struct {
+	Tuple1Value *CLValueInstance_Tuple1 `protobuf:"bytes,19,opt,name=tuple1_value,json=tuple1Value,proto3,oneof" json:"tuple1_value,omitempty"`
+}
+type CLValueInstance_Value_Tuple2Value struct {
+	Tuple2Value *CLValueInstance_Tuple2 `protobuf:"bytes,20,opt,name=tuple2_value,json=tuple2Value,proto3,oneof" json:"tuple2_value,omitempty"`
+}
+type CLValueInstance_Value_Tuple3Value struct {
+	Tuple3Value *CLValueInstance_Tuple3 `protobuf:"bytes,21,opt,name=tuple3_value,json=tuple3Value,proto3,oneof" json:"tuple3_value,omitempty"`
+}
+type CLValueInstance_Value_BytesValue struct {
+	BytesValue []byte `protobuf:"bytes,22,opt,name=bytes_value,json=bytesValue,proto3,oneof" json:"bytes_value,omitempty"`
+}
+
+func (*CLValueInstance_Value_BoolValue) isCLValueInstance_Value_Value()      {}
+func (*CLValueInstance_Value_I32) isCLValueInstance_Value_Value()            {}
+func (*CLValueInstance_Value_I64) isCLValueInstance_Value_Value()            {}
+func (*CLValueInstance_Value_U8) isCLValueInstance_Value_Value()             {}
+func (*CLValueInstance_Value_U32) isCLValueInstance_Value_Value()            {}
+func (*CLValueInstance_Value_U64) isCLValueInstance_Value_Value()            {}
+func (*CLValueInstance_Value_U128) isCLValueInstance_Value_Value()           {}
+func (*CLValueInstance_Value_U256) isCLValueInstance_Value_Value()           {}
+func (*CLValueInstance_Value_U512) isCLValueInstance_Value_Value()           {}
+func (*CLValueInstance_Value_Unit) isCLValueInstance_Value_Value()           {}
+func (*CLValueInstance_Value_StrValue) isCLValueInstance_Value_Value()       {}
+func (*CLValueInstance_Value_Key) isCLValueInstance_Value_Value()            {}
+func (*CLValueInstance_Value_Uref) isCLValueInstance_Value_Value()           {}
+func (*CLValueInstance_Value_OptionValue) isCLValueInstance_Value_Value()    {}
+func (*CLValueInstance_Value_ListValue) isCLValueInstance_Value_Value()      {}
+func (*CLValueInstance_Value_FixedListValue) isCLValueInstance_Value_Value() {}
+func (*CLValueInstance_Value_ResultValue) isCLValueInstance_Value_Value()    {}
+func (*CLValueInstance_Value_MapValue) isCLValueInstance_Value_Value()       {}
+func (*CLValueInstance_Value_Tuple1Value) isCLValueInstance_Value_Value()    {}
+func (*CLValueInstance_Value_Tuple2Value) isCLValueInstance_Value_Value()    {}
+func (*CLValueInstance_Value_Tuple3Value) isCLValueInstance_Value_Value()    {}
+func (*CLValueInstance_Value_BytesValue) isCLValueInstance_Value_Value()     {}
+
+func (m *CLValueInstance_Value) GetValue() isCLValueInstance_Value_Value {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetBoolValue() bool {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_BoolValue); ok {
+		return x.BoolValue
+	}
+	return false
+}
+
+func (m *CLValueInstance_Value) GetI32() int32 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_I32); ok {
+		return x.I32
+	}
+	return 0
+}
+
+func (m *CLValueInstance_Value) GetI64() int64 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_I64); ok {
+		return x.I64
+	}
+	return 0
+}
+
+func (m *CLValueInstance_Value) GetU8() int32 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_U8); ok {
+		return x.U8
+	}
+	return 0
+}
+
+func (m *CLValueInstance_Value) GetU32() uint32 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_U32); ok {
+		return x.U32
+	}
+	return 0
+}
+
+func (m *CLValueInstance_Value) GetU64() uint64 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_U64); ok {
+		return x.U64
+	}
+	return 0
+}
+
+func (m *CLValueInstance_Value) GetU128() *CLValueInstance_U128 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_U128); ok {
+		return x.U128
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetU256() *CLValueInstance_U256 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_U256); ok {
+		return x.U256
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetU512() *CLValueInstance_U512 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_U512); ok {
+		return x.U512
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetUnit() *Unit {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_Unit); ok {
+		return x.Unit
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetStrValue() string {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_StrValue); ok {
+		return x.StrValue
+	}
+	return ""
+}
+
+func (m *CLValueInstance_Value) GetKey() *Key {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_Key); ok {
+		return x.Key
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetUref() *Key_URef {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_Uref); ok {
+		return x.Uref
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetOptionValue() *CLValueInstance_Option {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_OptionValue); ok {
+		return x.OptionValue
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetListValue() *CLValueInstance_List {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_ListValue); ok {
+		return x.ListValue
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetFixedListValue() *CLValueInstance_FixedList {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_FixedListValue); ok {
+		return x.FixedListValue
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetResultValue() *CLValueInstance_Result {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_ResultValue); ok {
+		return x.ResultValue
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetMapValue() *CLValueInstance_Map {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_MapValue); ok {
+		return x.MapValue
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetTuple1Value() *CLValueInstance_Tuple1 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_Tuple1Value); ok {
+		return x.Tuple1Value
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetTuple2Value() *CLValueInstance_Tuple2 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_Tuple2Value); ok {
+		return x.Tuple2Value
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetTuple3Value() *CLValueInstance_Tuple3 {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_Tuple3Value); ok {
+		return x.Tuple3Value
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Value) GetBytesValue() []byte {
+	if x, ok := m.GetValue().(*CLValueInstance_Value_BytesValue); ok {
+		return x.BytesValue
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*CLValueInstance_Value) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*CLValueInstance_Value_BoolValue)(nil),
+		(*CLValueInstance_Value_I32)(nil),
+		(*CLValueInstance_Value_I64)(nil),
+		(*CLValueInstance_Value_U8)(nil),
+		(*CLValueInstance_Value_U32)(nil),
+		(*CLValueInstance_Value_U64)(nil),
+		(*CLValueInstance_Value_U128)(nil),
+		(*CLValueInstance_Value_U256)(nil),
+		(*CLValueInstance_Value_U512)(nil),
+		(*CLValueInstance_Value_Unit)(nil),
+		(*CLValueInstance_Value_StrValue)(nil),
+		(*CLValueInstance_Value_Key)(nil),
+		(*CLValueInstance_Value_Uref)(nil),
+		(*CLValueInstance_Value_OptionValue)(nil),
+		(*CLValueInstance_Value_ListValue)(nil),
+		(*CLValueInstance_Value_FixedListValue)(nil),
+		(*CLValueInstance_Value_ResultValue)(nil),
+		(*CLValueInstance_Value_MapValue)(nil),
+		(*CLValueInstance_Value_Tuple1Value)(nil),
+		(*CLValueInstance_Value_Tuple2Value)(nil),
+		(*CLValueInstance_Value_Tuple3Value)(nil),
+		(*CLValueInstance_Value_BytesValue)(nil),
+	}
+}
+
+// The BigInt types encode their values as strings; it is invalid to have a
+// string which cannot be parsed as a non-negative whole number.
+type CLValueInstance_U128 struct {
+	Value                string   `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CLValueInstance_U128) Reset()         { *m = CLValueInstance_U128{} }
+func (m *CLValueInstance_U128) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_U128) ProtoMessage()    {}
+func (*CLValueInstance_U128) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 1}
+}
+func (m *CLValueInstance_U128) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_U128.Unmarshal(m, b)
+}
+func (m *CLValueInstance_U128) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_U128.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_U128) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_U128.Merge(m, src)
+}
+func (m *CLValueInstance_U128) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_U128.Size(m)
+}
+func (m *CLValueInstance_U128) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_U128.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_U128 proto.InternalMessageInfo
+
+func (m *CLValueInstance_U128) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
+type CLValueInstance_U256 struct {
+	Value                string   `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CLValueInstance_U256) Reset()         { *m = CLValueInstance_U256{} }
+func (m *CLValueInstance_U256) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_U256) ProtoMessage()    {}
+func (*CLValueInstance_U256) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 2}
+}
+func (m *CLValueInstance_U256) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_U256.Unmarshal(m, b)
+}
+func (m *CLValueInstance_U256) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_U256.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_U256) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_U256.Merge(m, src)
+}
+func (m *CLValueInstance_U256) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_U256.Size(m)
+}
+func (m *CLValueInstance_U256) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_U256.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_U256 proto.InternalMessageInfo
+
+func (m *CLValueInstance_U256) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
+type CLValueInstance_U512 struct {
+	Value                string   `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CLValueInstance_U512) Reset()         { *m = CLValueInstance_U512{} }
+func (m *CLValueInstance_U512) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_U512) ProtoMessage()    {}
+func (*CLValueInstance_U512) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 3}
+}
+func (m *CLValueInstance_U512) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_U512.Unmarshal(m, b)
+}
+func (m *CLValueInstance_U512) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_U512.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_U512) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_U512.Merge(m, src)
+}
+func (m *CLValueInstance_U512) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_U512.Size(m)
+}
+func (m *CLValueInstance_U512) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_U512.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_U512 proto.InternalMessageInfo
+
+func (m *CLValueInstance_U512) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
+type CLValueInstance_Option struct {
+	Value                *CLValueInstance_Value `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *CLValueInstance_Option) Reset()         { *m = CLValueInstance_Option{} }
+func (m *CLValueInstance_Option) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Option) ProtoMessage()    {}
+func (*CLValueInstance_Option) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 4}
+}
+func (m *CLValueInstance_Option) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Option.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Option) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Option.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Option) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Option.Merge(m, src)
+}
+func (m *CLValueInstance_Option) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Option.Size(m)
+}
+func (m *CLValueInstance_Option) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Option.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Option proto.InternalMessageInfo
+
+func (m *CLValueInstance_Option) GetValue() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+// Technically these types can represent heterogeneous lists and maps,
+// however it will be considered illegal to do so because there is no way to
+// assign a CLType to such an object.
+type CLValueInstance_List struct {
+	Values               []*CLValueInstance_Value `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
+}
+
+func (m *CLValueInstance_List) Reset()         { *m = CLValueInstance_List{} }
+func (m *CLValueInstance_List) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_List) ProtoMessage()    {}
+func (*CLValueInstance_List) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 5}
+}
+func (m *CLValueInstance_List) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_List.Unmarshal(m, b)
+}
+func (m *CLValueInstance_List) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_List.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_List) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_List.Merge(m, src)
+}
+func (m *CLValueInstance_List) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_List.Size(m)
+}
+func (m *CLValueInstance_List) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_List.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_List proto.InternalMessageInfo
+
+func (m *CLValueInstance_List) GetValues() []*CLValueInstance_Value {
+	if m != nil {
+		return m.Values
+	}
+	return nil
+}
+
+type CLValueInstance_FixedList struct {
+	Length uint32 `protobuf:"varint,1,opt,name=length,proto3" json:"length,omitempty"`
+	// length of this list must be equal to length above
+	Values               []*CLValueInstance_Value `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
+}
+
+func (m *CLValueInstance_FixedList) Reset()         { *m = CLValueInstance_FixedList{} }
+func (m *CLValueInstance_FixedList) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_FixedList) ProtoMessage()    {}
+func (*CLValueInstance_FixedList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 6}
+}
+func (m *CLValueInstance_FixedList) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_FixedList.Unmarshal(m, b)
+}
+func (m *CLValueInstance_FixedList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_FixedList.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_FixedList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_FixedList.Merge(m, src)
+}
+func (m *CLValueInstance_FixedList) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_FixedList.Size(m)
+}
+func (m *CLValueInstance_FixedList) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_FixedList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_FixedList proto.InternalMessageInfo
+
+func (m *CLValueInstance_FixedList) GetLength() uint32 {
+	if m != nil {
+		return m.Length
+	}
+	return 0
+}
+
+func (m *CLValueInstance_FixedList) GetValues() []*CLValueInstance_Value {
+	if m != nil {
+		return m.Values
+	}
+	return nil
+}
+
+type CLValueInstance_Result struct {
+	// Types that are valid to be assigned to Value:
+	//	*CLValueInstance_Result_Ok
+	//	*CLValueInstance_Result_Err
+	Value                isCLValueInstance_Result_Value `protobuf_oneof:"value"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
+}
+
+func (m *CLValueInstance_Result) Reset()         { *m = CLValueInstance_Result{} }
+func (m *CLValueInstance_Result) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Result) ProtoMessage()    {}
+func (*CLValueInstance_Result) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 7}
+}
+func (m *CLValueInstance_Result) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Result.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Result) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Result.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Result) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Result.Merge(m, src)
+}
+func (m *CLValueInstance_Result) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Result.Size(m)
+}
+func (m *CLValueInstance_Result) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Result.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Result proto.InternalMessageInfo
+
+type isCLValueInstance_Result_Value interface {
+	isCLValueInstance_Result_Value()
+}
+
+type CLValueInstance_Result_Ok struct {
+	Ok *CLValueInstance_Value `protobuf:"bytes,1,opt,name=ok,proto3,oneof" json:"ok,omitempty"`
+}
+type CLValueInstance_Result_Err struct {
+	Err *CLValueInstance_Value `protobuf:"bytes,2,opt,name=err,proto3,oneof" json:"err,omitempty"`
+}
+
+func (*CLValueInstance_Result_Ok) isCLValueInstance_Result_Value()  {}
+func (*CLValueInstance_Result_Err) isCLValueInstance_Result_Value() {}
+
+func (m *CLValueInstance_Result) GetValue() isCLValueInstance_Result_Value {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Result) GetOk() *CLValueInstance_Value {
+	if x, ok := m.GetValue().(*CLValueInstance_Result_Ok); ok {
+		return x.Ok
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Result) GetErr() *CLValueInstance_Value {
+	if x, ok := m.GetValue().(*CLValueInstance_Result_Err); ok {
+		return x.Err
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*CLValueInstance_Result) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*CLValueInstance_Result_Ok)(nil),
+		(*CLValueInstance_Result_Err)(nil),
+	}
+}
+
+type CLValueInstance_Map struct {
+	// key-value pairs
+	Values               []*CLValueInstance_MapEntry `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
+	XXX_unrecognized     []byte                      `json:"-"`
+	XXX_sizecache        int32                       `json:"-"`
+}
+
+func (m *CLValueInstance_Map) Reset()         { *m = CLValueInstance_Map{} }
+func (m *CLValueInstance_Map) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Map) ProtoMessage()    {}
+func (*CLValueInstance_Map) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 8}
+}
+func (m *CLValueInstance_Map) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Map.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Map) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Map.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Map) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Map.Merge(m, src)
+}
+func (m *CLValueInstance_Map) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Map.Size(m)
+}
+func (m *CLValueInstance_Map) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Map.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Map proto.InternalMessageInfo
+
+func (m *CLValueInstance_Map) GetValues() []*CLValueInstance_MapEntry {
+	if m != nil {
+		return m.Values
+	}
+	return nil
+}
+
+type CLValueInstance_MapEntry struct {
+	Key                  *CLValueInstance_Value `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value                *CLValueInstance_Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *CLValueInstance_MapEntry) Reset()         { *m = CLValueInstance_MapEntry{} }
+func (m *CLValueInstance_MapEntry) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_MapEntry) ProtoMessage()    {}
+func (*CLValueInstance_MapEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 9}
+}
+func (m *CLValueInstance_MapEntry) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_MapEntry.Unmarshal(m, b)
+}
+func (m *CLValueInstance_MapEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_MapEntry.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_MapEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_MapEntry.Merge(m, src)
+}
+func (m *CLValueInstance_MapEntry) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_MapEntry.Size(m)
+}
+func (m *CLValueInstance_MapEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_MapEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_MapEntry proto.InternalMessageInfo
+
+func (m *CLValueInstance_MapEntry) GetKey() *CLValueInstance_Value {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+func (m *CLValueInstance_MapEntry) GetValue() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+type CLValueInstance_Tuple1 struct {
+	Value_1              *CLValueInstance_Value `protobuf:"bytes,1,opt,name=value_1,json=value1,proto3" json:"value_1,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *CLValueInstance_Tuple1) Reset()         { *m = CLValueInstance_Tuple1{} }
+func (m *CLValueInstance_Tuple1) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Tuple1) ProtoMessage()    {}
+func (*CLValueInstance_Tuple1) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 10}
+}
+func (m *CLValueInstance_Tuple1) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Tuple1.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Tuple1) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Tuple1.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Tuple1) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Tuple1.Merge(m, src)
+}
+func (m *CLValueInstance_Tuple1) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Tuple1.Size(m)
+}
+func (m *CLValueInstance_Tuple1) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Tuple1.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Tuple1 proto.InternalMessageInfo
+
+func (m *CLValueInstance_Tuple1) GetValue_1() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value_1
+	}
+	return nil
+}
+
+type CLValueInstance_Tuple2 struct {
+	Value_1              *CLValueInstance_Value `protobuf:"bytes,1,opt,name=value_1,json=value1,proto3" json:"value_1,omitempty"`
+	Value_2              *CLValueInstance_Value `protobuf:"bytes,2,opt,name=value_2,json=value2,proto3" json:"value_2,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *CLValueInstance_Tuple2) Reset()         { *m = CLValueInstance_Tuple2{} }
+func (m *CLValueInstance_Tuple2) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Tuple2) ProtoMessage()    {}
+func (*CLValueInstance_Tuple2) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 11}
+}
+func (m *CLValueInstance_Tuple2) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Tuple2.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Tuple2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Tuple2.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Tuple2) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Tuple2.Merge(m, src)
+}
+func (m *CLValueInstance_Tuple2) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Tuple2.Size(m)
+}
+func (m *CLValueInstance_Tuple2) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Tuple2.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Tuple2 proto.InternalMessageInfo
+
+func (m *CLValueInstance_Tuple2) GetValue_1() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value_1
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Tuple2) GetValue_2() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value_2
+	}
+	return nil
+}
+
+type CLValueInstance_Tuple3 struct {
+	Value_1              *CLValueInstance_Value `protobuf:"bytes,1,opt,name=value_1,json=value1,proto3" json:"value_1,omitempty"`
+	Value_2              *CLValueInstance_Value `protobuf:"bytes,2,opt,name=value_2,json=value2,proto3" json:"value_2,omitempty"`
+	Value_3              *CLValueInstance_Value `protobuf:"bytes,3,opt,name=value_3,json=value3,proto3" json:"value_3,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *CLValueInstance_Tuple3) Reset()         { *m = CLValueInstance_Tuple3{} }
+func (m *CLValueInstance_Tuple3) String() string { return proto.CompactTextString(m) }
+func (*CLValueInstance_Tuple3) ProtoMessage()    {}
+func (*CLValueInstance_Tuple3) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{2, 12}
+}
+func (m *CLValueInstance_Tuple3) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CLValueInstance_Tuple3.Unmarshal(m, b)
+}
+func (m *CLValueInstance_Tuple3) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CLValueInstance_Tuple3.Marshal(b, m, deterministic)
+}
+func (m *CLValueInstance_Tuple3) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CLValueInstance_Tuple3.Merge(m, src)
+}
+func (m *CLValueInstance_Tuple3) XXX_Size() int {
+	return xxx_messageInfo_CLValueInstance_Tuple3.Size(m)
+}
+func (m *CLValueInstance_Tuple3) XXX_DiscardUnknown() {
+	xxx_messageInfo_CLValueInstance_Tuple3.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CLValueInstance_Tuple3 proto.InternalMessageInfo
+
+func (m *CLValueInstance_Tuple3) GetValue_1() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value_1
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Tuple3) GetValue_2() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value_2
+	}
+	return nil
+}
+
+func (m *CLValueInstance_Tuple3) GetValue_3() *CLValueInstance_Value {
+	if m != nil {
+		return m.Value_3
+	}
+	return nil
+}
+
 // Value stored under a key in global state.
 type StoredValue struct {
 	// Types that are valid to be assigned to Variants:
@@ -750,7 +1676,7 @@ func (m *StoredValue) Reset()         { *m = StoredValue{} }
 func (m *StoredValue) String() string { return proto.CompactTextString(m) }
 func (*StoredValue) ProtoMessage()    {}
 func (*StoredValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{2}
+	return fileDescriptor_bc5c211b7c38b10a, []int{3}
 }
 func (m *StoredValue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StoredValue.Unmarshal(m, b)
@@ -825,6 +1751,96 @@ func (*StoredValue) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+type StoredValueInstance struct {
+	// Types that are valid to be assigned to Value:
+	//	*StoredValueInstance_ClValue
+	//	*StoredValueInstance_Account
+	//	*StoredValueInstance_Contract
+	Value                isStoredValueInstance_Value `protobuf_oneof:"value"`
+	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
+	XXX_unrecognized     []byte                      `json:"-"`
+	XXX_sizecache        int32                       `json:"-"`
+}
+
+func (m *StoredValueInstance) Reset()         { *m = StoredValueInstance{} }
+func (m *StoredValueInstance) String() string { return proto.CompactTextString(m) }
+func (*StoredValueInstance) ProtoMessage()    {}
+func (*StoredValueInstance) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bc5c211b7c38b10a, []int{4}
+}
+func (m *StoredValueInstance) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StoredValueInstance.Unmarshal(m, b)
+}
+func (m *StoredValueInstance) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StoredValueInstance.Marshal(b, m, deterministic)
+}
+func (m *StoredValueInstance) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StoredValueInstance.Merge(m, src)
+}
+func (m *StoredValueInstance) XXX_Size() int {
+	return xxx_messageInfo_StoredValueInstance.Size(m)
+}
+func (m *StoredValueInstance) XXX_DiscardUnknown() {
+	xxx_messageInfo_StoredValueInstance.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StoredValueInstance proto.InternalMessageInfo
+
+type isStoredValueInstance_Value interface {
+	isStoredValueInstance_Value()
+}
+
+type StoredValueInstance_ClValue struct {
+	ClValue *CLValueInstance `protobuf:"bytes,1,opt,name=cl_value,json=clValue,proto3,oneof" json:"cl_value,omitempty"`
+}
+type StoredValueInstance_Account struct {
+	Account *Account `protobuf:"bytes,2,opt,name=account,proto3,oneof" json:"account,omitempty"`
+}
+type StoredValueInstance_Contract struct {
+	Contract *Contract `protobuf:"bytes,3,opt,name=contract,proto3,oneof" json:"contract,omitempty"`
+}
+
+func (*StoredValueInstance_ClValue) isStoredValueInstance_Value()  {}
+func (*StoredValueInstance_Account) isStoredValueInstance_Value()  {}
+func (*StoredValueInstance_Contract) isStoredValueInstance_Value() {}
+
+func (m *StoredValueInstance) GetValue() isStoredValueInstance_Value {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *StoredValueInstance) GetClValue() *CLValueInstance {
+	if x, ok := m.GetValue().(*StoredValueInstance_ClValue); ok {
+		return x.ClValue
+	}
+	return nil
+}
+
+func (m *StoredValueInstance) GetAccount() *Account {
+	if x, ok := m.GetValue().(*StoredValueInstance_Account); ok {
+		return x.Account
+	}
+	return nil
+}
+
+func (m *StoredValueInstance) GetContract() *Contract {
+	if x, ok := m.GetValue().(*StoredValueInstance_Contract); ok {
+		return x.Contract
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*StoredValueInstance) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*StoredValueInstance_ClValue)(nil),
+		(*StoredValueInstance_Account)(nil),
+		(*StoredValueInstance_Contract)(nil),
+	}
+}
+
 type Value struct {
 	// Types that are valid to be assigned to Value:
 	//	*Value_IntValue
@@ -849,7 +1865,7 @@ func (m *Value) Reset()         { *m = Value{} }
 func (m *Value) String() string { return proto.CompactTextString(m) }
 func (*Value) ProtoMessage()    {}
 func (*Value) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{3}
+	return fileDescriptor_bc5c211b7c38b10a, []int{5}
 }
 func (m *Value) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Value.Unmarshal(m, b)
@@ -1043,7 +2059,7 @@ func (m *IntList) Reset()         { *m = IntList{} }
 func (m *IntList) String() string { return proto.CompactTextString(m) }
 func (*IntList) ProtoMessage()    {}
 func (*IntList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{4}
+	return fileDescriptor_bc5c211b7c38b10a, []int{6}
 }
 func (m *IntList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IntList.Unmarshal(m, b)
@@ -1081,7 +2097,7 @@ func (m *StringList) Reset()         { *m = StringList{} }
 func (m *StringList) String() string { return proto.CompactTextString(m) }
 func (*StringList) ProtoMessage()    {}
 func (*StringList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{5}
+	return fileDescriptor_bc5c211b7c38b10a, []int{7}
 }
 func (m *StringList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StringList.Unmarshal(m, b)
@@ -1121,7 +2137,7 @@ func (m *BigInt) Reset()         { *m = BigInt{} }
 func (m *BigInt) String() string { return proto.CompactTextString(m) }
 func (*BigInt) ProtoMessage()    {}
 func (*BigInt) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{6}
+	return fileDescriptor_bc5c211b7c38b10a, []int{8}
 }
 func (m *BigInt) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BigInt.Unmarshal(m, b)
@@ -1171,7 +2187,7 @@ func (m *Key) Reset()         { *m = Key{} }
 func (m *Key) String() string { return proto.CompactTextString(m) }
 func (*Key) ProtoMessage()    {}
 func (*Key) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{7}
+	return fileDescriptor_bc5c211b7c38b10a, []int{9}
 }
 func (m *Key) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Key.Unmarshal(m, b)
@@ -1269,7 +2285,7 @@ func (m *Key_Address) Reset()         { *m = Key_Address{} }
 func (m *Key_Address) String() string { return proto.CompactTextString(m) }
 func (*Key_Address) ProtoMessage()    {}
 func (*Key_Address) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{7, 0}
+	return fileDescriptor_bc5c211b7c38b10a, []int{9, 0}
 }
 func (m *Key_Address) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Key_Address.Unmarshal(m, b)
@@ -1307,7 +2323,7 @@ func (m *Key_Hash) Reset()         { *m = Key_Hash{} }
 func (m *Key_Hash) String() string { return proto.CompactTextString(m) }
 func (*Key_Hash) ProtoMessage()    {}
 func (*Key_Hash) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{7, 1}
+	return fileDescriptor_bc5c211b7c38b10a, []int{9, 1}
 }
 func (m *Key_Hash) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Key_Hash.Unmarshal(m, b)
@@ -1346,7 +2362,7 @@ func (m *Key_URef) Reset()         { *m = Key_URef{} }
 func (m *Key_URef) String() string { return proto.CompactTextString(m) }
 func (*Key_URef) ProtoMessage()    {}
 func (*Key_URef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{7, 2}
+	return fileDescriptor_bc5c211b7c38b10a, []int{9, 2}
 }
 func (m *Key_URef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Key_URef.Unmarshal(m, b)
@@ -1377,7 +2393,7 @@ func (m *Key_URef) GetAccessRights() Key_URef_AccessRights {
 	if m != nil {
 		return m.AccessRights
 	}
-	return Key_URef_UNKNOWN
+	return Key_URef_NONE
 }
 
 type Key_Local struct {
@@ -1391,7 +2407,7 @@ func (m *Key_Local) Reset()         { *m = Key_Local{} }
 func (m *Key_Local) String() string { return proto.CompactTextString(m) }
 func (*Key_Local) ProtoMessage()    {}
 func (*Key_Local) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{7, 3}
+	return fileDescriptor_bc5c211b7c38b10a, []int{9, 3}
 }
 func (m *Key_Local) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Key_Local.Unmarshal(m, b)
@@ -1430,7 +2446,7 @@ func (m *NamedKey) Reset()         { *m = NamedKey{} }
 func (m *NamedKey) String() string { return proto.CompactTextString(m) }
 func (*NamedKey) ProtoMessage()    {}
 func (*NamedKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{8}
+	return fileDescriptor_bc5c211b7c38b10a, []int{10}
 }
 func (m *NamedKey) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NamedKey.Unmarshal(m, b)
@@ -1477,7 +2493,7 @@ func (m *Contract) Reset()         { *m = Contract{} }
 func (m *Contract) String() string { return proto.CompactTextString(m) }
 func (*Contract) ProtoMessage()    {}
 func (*Contract) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{9}
+	return fileDescriptor_bc5c211b7c38b10a, []int{11}
 }
 func (m *Contract) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Contract.Unmarshal(m, b)
@@ -1520,7 +2536,7 @@ func (m *Contract) GetProtocolVersion() *ProtocolVersion {
 
 type Account struct {
 	PublicKey            []byte                    `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
-	PurseId              *Key_URef                 `protobuf:"bytes,3,opt,name=purse_id,json=purseId,proto3" json:"purse_id,omitempty"`
+	MainPurse            *Key_URef                 `protobuf:"bytes,3,opt,name=main_purse,json=mainPurse,proto3" json:"main_purse,omitempty"`
 	NamedKeys            []*NamedKey               `protobuf:"bytes,4,rep,name=named_keys,json=namedKeys,proto3" json:"named_keys,omitempty"`
 	AssociatedKeys       []*Account_AssociatedKey  `protobuf:"bytes,5,rep,name=associated_keys,json=associatedKeys,proto3" json:"associated_keys,omitempty"`
 	ActionThresholds     *Account_ActionThresholds `protobuf:"bytes,6,opt,name=action_thresholds,json=actionThresholds,proto3" json:"action_thresholds,omitempty"`
@@ -1533,7 +2549,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{10}
+	return fileDescriptor_bc5c211b7c38b10a, []int{12}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -1560,9 +2576,9 @@ func (m *Account) GetPublicKey() []byte {
 	return nil
 }
 
-func (m *Account) GetPurseId() *Key_URef {
+func (m *Account) GetMainPurse() *Key_URef {
 	if m != nil {
-		return m.PurseId
+		return m.MainPurse
 	}
 	return nil
 }
@@ -1600,7 +2616,7 @@ func (m *Account_AssociatedKey) Reset()         { *m = Account_AssociatedKey{} }
 func (m *Account_AssociatedKey) String() string { return proto.CompactTextString(m) }
 func (*Account_AssociatedKey) ProtoMessage()    {}
 func (*Account_AssociatedKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{10, 0}
+	return fileDescriptor_bc5c211b7c38b10a, []int{12, 0}
 }
 func (m *Account_AssociatedKey) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account_AssociatedKey.Unmarshal(m, b)
@@ -1646,7 +2662,7 @@ func (m *Account_ActionThresholds) Reset()         { *m = Account_ActionThreshol
 func (m *Account_ActionThresholds) String() string { return proto.CompactTextString(m) }
 func (*Account_ActionThresholds) ProtoMessage()    {}
 func (*Account_ActionThresholds) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{10, 1}
+	return fileDescriptor_bc5c211b7c38b10a, []int{12, 1}
 }
 func (m *Account_ActionThresholds) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account_ActionThresholds.Unmarshal(m, b)
@@ -1690,7 +2706,7 @@ func (m *Unit) Reset()         { *m = Unit{} }
 func (m *Unit) String() string { return proto.CompactTextString(m) }
 func (*Unit) ProtoMessage()    {}
 func (*Unit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{11}
+	return fileDescriptor_bc5c211b7c38b10a, []int{13}
 }
 func (m *Unit) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Unit.Unmarshal(m, b)
@@ -1723,7 +2739,7 @@ func (m *ProtocolVersion) Reset()         { *m = ProtocolVersion{} }
 func (m *ProtocolVersion) String() string { return proto.CompactTextString(m) }
 func (*ProtocolVersion) ProtoMessage()    {}
 func (*ProtocolVersion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc5c211b7c38b10a, []int{12}
+	return fileDescriptor_bc5c211b7c38b10a, []int{14}
 }
 func (m *ProtocolVersion) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProtocolVersion.Unmarshal(m, b)
@@ -1778,7 +2794,22 @@ func init() {
 	proto.RegisterType((*CLType_Tuple3)(nil), "io.casperlabs.casper.consensus.state.CLType.Tuple3")
 	proto.RegisterType((*CLType_Any)(nil), "io.casperlabs.casper.consensus.state.CLType.Any")
 	proto.RegisterType((*CLValue)(nil), "io.casperlabs.casper.consensus.state.CLValue")
+	proto.RegisterType((*CLValueInstance)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance")
+	proto.RegisterType((*CLValueInstance_Value)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Value")
+	proto.RegisterType((*CLValueInstance_U128)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.U128")
+	proto.RegisterType((*CLValueInstance_U256)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.U256")
+	proto.RegisterType((*CLValueInstance_U512)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.U512")
+	proto.RegisterType((*CLValueInstance_Option)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Option")
+	proto.RegisterType((*CLValueInstance_List)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.List")
+	proto.RegisterType((*CLValueInstance_FixedList)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.FixedList")
+	proto.RegisterType((*CLValueInstance_Result)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Result")
+	proto.RegisterType((*CLValueInstance_Map)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Map")
+	proto.RegisterType((*CLValueInstance_MapEntry)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.MapEntry")
+	proto.RegisterType((*CLValueInstance_Tuple1)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Tuple1")
+	proto.RegisterType((*CLValueInstance_Tuple2)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Tuple2")
+	proto.RegisterType((*CLValueInstance_Tuple3)(nil), "io.casperlabs.casper.consensus.state.CLValueInstance.Tuple3")
 	proto.RegisterType((*StoredValue)(nil), "io.casperlabs.casper.consensus.state.StoredValue")
+	proto.RegisterType((*StoredValueInstance)(nil), "io.casperlabs.casper.consensus.state.StoredValueInstance")
 	proto.RegisterType((*Value)(nil), "io.casperlabs.casper.consensus.state.Value")
 	proto.RegisterType((*IntList)(nil), "io.casperlabs.casper.consensus.state.IntList")
 	proto.RegisterType((*StringList)(nil), "io.casperlabs.casper.consensus.state.StringList")
@@ -1802,102 +2833,136 @@ func init() {
 }
 
 var fileDescriptor_bc5c211b7c38b10a = []byte{
-	// 1544 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x98, 0xcd, 0x6e, 0xdb, 0x46,
-	0x10, 0xc7, 0x45, 0x49, 0xfc, 0x1a, 0xc9, 0x36, 0xbb, 0x0d, 0x02, 0x43, 0x41, 0x50, 0x47, 0xc9,
-	0xc1, 0x29, 0x6a, 0x39, 0x96, 0x12, 0x23, 0x80, 0xdb, 0xa0, 0x72, 0xec, 0xc4, 0x72, 0xfc, 0x11,
-	0xd0, 0x76, 0x82, 0x36, 0x28, 0x94, 0x15, 0xb5, 0x96, 0xb6, 0xa6, 0x48, 0x82, 0x4b, 0x25, 0x55,
-	0x7a, 0xe8, 0xa9, 0x05, 0x8a, 0x5e, 0xfa, 0x66, 0xb9, 0xf4, 0x29, 0xda, 0x17, 0xe8, 0xa9, 0x28,
-	0xf6, 0x83, 0x92, 0xed, 0x16, 0xa8, 0xa8, 0xf8, 0xd0, 0x8b, 0xb1, 0xb3, 0xcb, 0xff, 0x8f, 0xb3,
-	0xc3, 0xd9, 0x99, 0xb5, 0xe0, 0x1e, 0x0d, 0x57, 0x3d, 0xcc, 0x22, 0x12, 0xfb, 0xb8, 0xc3, 0xd4,
-	0x70, 0xd5, 0x0b, 0x03, 0x46, 0x02, 0x36, 0x64, 0xab, 0x2c, 0xc1, 0x09, 0x91, 0x7f, 0x6b, 0x51,
-	0x1c, 0x26, 0x21, 0xba, 0x43, 0xc3, 0xda, 0x44, 0xa1, 0x86, 0xb5, 0xb1, 0xa2, 0x26, 0x9e, 0xad,
-	0xbe, 0x5f, 0x00, 0xe3, 0xf1, 0xde, 0xf1, 0x28, 0x22, 0xe8, 0x05, 0x94, 0x18, 0x1d, 0x44, 0x3e,
-	0x69, 0x27, 0xa3, 0x88, 0x2c, 0x6a, 0x4b, 0xda, 0xf2, 0x7c, 0xbd, 0x51, 0x9b, 0x06, 0x53, 0x93,
-	0x88, 0xda, 0x91, 0xd0, 0xef, 0xe4, 0x5c, 0x90, 0xa4, 0x94, 0x1b, 0x46, 0x09, 0x0d, 0x03, 0xc9,
-	0xcd, 0x2f, 0x69, 0xcb, 0xa5, 0x8c, 0xdc, 0x43, 0xa1, 0xe7, 0x5c, 0x49, 0x12, 0xdc, 0xe7, 0x60,
-	0xfb, 0x94, 0x25, 0x92, 0x5a, 0x10, 0xd4, 0xb5, 0x4c, 0xd4, 0x3d, 0xca, 0x92, 0x9d, 0x9c, 0x6b,
-	0x71, 0x8a, 0x20, 0xbe, 0x86, 0x85, 0x53, 0xfa, 0x1d, 0xe9, 0xb6, 0x27, 0xdc, 0xa2, 0xe0, 0xae,
-	0x67, 0xe2, 0x3e, 0xe1, 0x0c, 0x05, 0x9f, 0x3b, 0x4d, 0x8d, 0x34, 0x16, 0x31, 0x61, 0x43, 0x5f,
-	0xd1, 0xf5, 0x19, 0x62, 0xe1, 0x0a, 0x3d, 0x8f, 0x85, 0x24, 0x09, 0xee, 0x3e, 0x58, 0x03, 0x1c,
-	0x49, 0xa8, 0x21, 0xa0, 0xf7, 0x32, 0x41, 0xf7, 0x71, 0xb4, 0x93, 0x73, 0xcd, 0x01, 0x8e, 0x52,
-	0x37, 0x93, 0x61, 0xe4, 0x93, 0x35, 0x49, 0x34, 0x67, 0x70, 0xf3, 0x58, 0xe8, 0xb9, 0x9b, 0x92,
-	0x74, 0x81, 0x5b, 0x97, 0x5c, 0x6b, 0x56, 0x6e, 0x7d, 0xcc, 0xad, 0x5f, 0xe0, 0x36, 0x24, 0xd7,
-	0x9e, 0x95, 0xdb, 0x18, 0x73, 0x1b, 0x69, 0x58, 0x71, 0x30, 0x92, 0x50, 0x98, 0x21, 0xac, 0xcd,
-	0x60, 0xc4, 0xc3, 0x8a, 0x83, 0x11, 0x37, 0x2b, 0x7b, 0x60, 0xc8, 0x4c, 0x46, 0x9b, 0xa0, 0xd3,
-	0x20, 0x20, 0xb1, 0x38, 0x65, 0xa5, 0xfa, 0x67, 0x59, 0xa8, 0xae, 0x94, 0x56, 0x76, 0xa1, 0xc8,
-	0xf3, 0xea, 0x4a, 0x58, 0x18, 0xec, 0x71, 0xd6, 0x5e, 0x05, 0x10, 0x39, 0x50, 0xf0, 0x49, 0x20,
-	0x0e, 0xfb, 0x9c, 0xcb, 0x87, 0x95, 0x9f, 0x34, 0x30, 0x64, 0xee, 0xa2, 0xcf, 0x21, 0x1f, 0x9e,
-	0xcd, 0x44, 0xcf, 0x87, 0x67, 0xe8, 0x11, 0x14, 0x48, 0x1c, 0xab, 0x3a, 0x92, 0x4d, 0xce, 0x85,
-	0x95, 0x9f, 0x35, 0x28, 0xec, 0xe3, 0x88, 0x73, 0xce, 0xc8, 0x68, 0x26, 0x37, 0xb8, 0x90, 0x87,
-	0xe9, 0x0d, 0xf6, 0x87, 0x64, 0x26, 0x4f, 0xa4, 0x94, 0x67, 0x84, 0x3c, 0x28, 0x9c, 0xc6, 0xd3,
-	0xec, 0xde, 0x6c, 0x41, 0x17, 0xd2, 0xca, 0xaf, 0x9a, 0xc2, 0xd5, 0xaf, 0x02, 0x97, 0x32, 0xd6,
-	0x66, 0xdb, 0xa0, 0x90, 0x56, 0x7e, 0x4b, 0x5d, 0x6a, 0xfc, 0x5f, 0x5c, 0x4a, 0x19, 0x75, 0xd5,
-	0x33, 0x66, 0x60, 0xd4, 0x2b, 0x3a, 0x14, 0x9a, 0xc1, 0xa8, 0xfa, 0xa3, 0x06, 0x86, 0xec, 0x79,
-	0xc8, 0x82, 0xe2, 0xe6, 0xe1, 0xe1, 0x9e, 0x93, 0x43, 0x26, 0x14, 0x5a, 0x8d, 0xba, 0xa3, 0x89,
-	0xc1, 0xfa, 0x7d, 0x27, 0x8f, 0x0c, 0xc8, 0x9f, 0x3c, 0x74, 0x0a, 0x7c, 0xe2, 0xa4, 0x51, 0x77,
-	0x8a, 0x62, 0xb0, 0x7e, 0xdf, 0xd1, 0xb9, 0xea, 0x64, 0xad, 0xfe, 0xd0, 0x31, 0xc4, 0xa8, 0xfe,
-	0x60, 0xdd, 0x31, 0xc5, 0xe8, 0xc1, 0x5a, 0xdd, 0xb1, 0xc4, 0xe8, 0xa0, 0x75, 0xec, 0xd8, 0x08,
-	0xc0, 0x38, 0x3a, 0x76, 0x5b, 0x07, 0x4f, 0x1d, 0xe0, 0xe2, 0x67, 0xdb, 0x5f, 0x39, 0x25, 0xb1,
-	0xec, 0x6e, 0x3f, 0x71, 0xca, 0x9b, 0x00, 0xd6, 0x1b, 0x1c, 0x53, 0x1c, 0x24, 0xac, 0xfa, 0x3d,
-	0x98, 0x8f, 0xf7, 0x5e, 0xf0, 0xec, 0x42, 0xdb, 0x60, 0x7a, 0xfe, 0xa4, 0x9b, 0x67, 0xdd, 0xab,
-	0xe1, 0xf9, 0xa2, 0x0a, 0xde, 0x05, 0x87, 0x91, 0x98, 0x62, 0x9f, 0xbe, 0x23, 0xdd, 0xf6, 0x24,
-	0xe7, 0xcb, 0xee, 0xc2, 0x64, 0x5e, 0xbc, 0xb1, 0xfa, 0x97, 0x06, 0xa5, 0xa3, 0x24, 0x8c, 0x95,
-	0x8d, 0x76, 0xc1, 0xf2, 0x7c, 0x25, 0x91, 0x2e, 0xac, 0x4c, 0xeb, 0x82, 0x00, 0xf0, 0xea, 0xe9,
-	0xf9, 0x92, 0xd5, 0x02, 0x13, 0x7b, 0x5e, 0x38, 0x0c, 0x12, 0xf5, 0xf5, 0xa7, 0x44, 0x35, 0xa5,
-	0x48, 0x14, 0x62, 0x39, 0x44, 0x7b, 0x60, 0x79, 0x61, 0x90, 0xc4, 0xd8, 0x4b, 0x54, 0x16, 0xd4,
-	0xa6, 0x74, 0x4b, 0xa9, 0xf8, 0xb5, 0x21, 0x25, 0x5c, 0x88, 0xfe, 0x1f, 0x3a, 0xe8, 0xd2, 0xdd,
-	0x9b, 0x60, 0xd3, 0x20, 0x39, 0xb7, 0x77, 0x9d, 0x8b, 0x68, 0x90, 0xc8, 0xe5, 0x5b, 0x50, 0xea,
-	0x8c, 0x12, 0xc2, 0xce, 0xc7, 0x93, 0x77, 0x1f, 0x31, 0x39, 0x0e, 0x1e, 0x27, 0xf0, 0xcb, 0x88,
-	0xf2, 0x72, 0xca, 0x1d, 0xb7, 0x82, 0x44, 0x5d, 0x3f, 0x4c, 0x2a, 0x87, 0xe8, 0x36, 0x94, 0x59,
-	0x12, 0xd3, 0xa0, 0xa7, 0xde, 0xc7, 0xef, 0x35, 0xf6, 0x4e, 0xce, 0x2d, 0xc9, 0xd9, 0x7f, 0x44,
-	0x58, 0xbf, 0xc2, 0x08, 0x1b, 0x1f, 0x1a, 0x61, 0x74, 0x04, 0xca, 0x4f, 0x19, 0x0c, 0x33, 0x4b,
-	0x2b, 0x3e, 0x12, 0x42, 0x15, 0x0f, 0x60, 0x63, 0x0b, 0xed, 0x83, 0x1d, 0xe0, 0x01, 0xe9, 0xb6,
-	0x79, 0x17, 0xb0, 0xb2, 0xf8, 0x78, 0xc0, 0x65, 0xcf, 0x08, 0xef, 0xed, 0x56, 0xa0, 0xc6, 0xe8,
-	0x29, 0x98, 0x1d, 0xda, 0x6b, 0xd3, 0x20, 0x51, 0xf7, 0x8f, 0x29, 0x0f, 0xdb, 0x26, 0xed, 0xb5,
-	0x44, 0xec, 0x8c, 0x8e, 0x18, 0xa1, 0x2f, 0x64, 0x5f, 0x92, 0xf7, 0x8d, 0xbb, 0xd3, 0x41, 0xa4,
-	0x33, 0xa2, 0x2d, 0x7d, 0x09, 0xc5, 0x61, 0x40, 0x93, 0xc5, 0x92, 0xd0, 0x7f, 0x3a, 0x9d, 0xfe,
-	0x24, 0xa0, 0xdc, 0x05, 0xa1, 0x44, 0x9f, 0x00, 0xf8, 0xe1, 0x38, 0x53, 0xca, 0x4b, 0xda, 0x72,
-	0x71, 0x27, 0xe7, 0xda, 0x7c, 0x4e, 0xe4, 0xc9, 0xa6, 0xa9, 0x3a, 0x5f, 0xf5, 0x16, 0x98, 0x2a,
-	0xd7, 0xd0, 0x75, 0x30, 0xc4, 0x1c, 0x5b, 0xd4, 0x96, 0x0a, 0xcb, 0xba, 0xab, 0xac, 0xea, 0x1d,
-	0x80, 0xc9, 0x17, 0xb8, 0xf4, 0x94, 0x3d, 0x7e, 0x6a, 0x03, 0x0c, 0x19, 0x07, 0x74, 0x2d, 0xed,
-	0xaa, 0xfc, 0xc8, 0xd8, 0xaa, 0x4f, 0xa2, 0x1b, 0x60, 0x77, 0x68, 0xd2, 0x7e, 0x4b, 0xbb, 0x49,
-	0x5f, 0x5d, 0x2a, 0xac, 0x0e, 0x4d, 0x5e, 0x72, 0xbb, 0xfa, 0x8b, 0x0e, 0x05, 0xfe, 0x05, 0xf6,
-	0xc1, 0xc4, 0xdd, 0x6e, 0x4c, 0x18, 0x53, 0xb5, 0x66, 0x6d, 0xea, 0xe0, 0xd5, 0x9a, 0x52, 0x28,
-	0x52, 0x58, 0x0e, 0xd1, 0x16, 0x14, 0xfb, 0x98, 0xf5, 0x55, 0xb1, 0xa9, 0x4d, 0xcf, 0xda, 0xc1,
-	0xac, 0xcf, 0x83, 0xc9, 0xd5, 0x9c, 0x32, 0x8c, 0xc9, 0x69, 0xb6, 0x32, 0xc3, 0x29, 0x27, 0x2e,
-	0x39, 0x15, 0x9f, 0x24, 0x26, 0xa7, 0xe8, 0x29, 0xe8, 0x7e, 0xe8, 0x61, 0x5f, 0xfd, 0x3f, 0xb2,
-	0x3a, 0x3d, 0x66, 0x8f, 0xcb, 0x76, 0x72, 0xae, 0xd4, 0x57, 0x6e, 0x83, 0xa9, 0xb6, 0x8a, 0x16,
-	0x27, 0xa7, 0x5d, 0x13, 0xd5, 0x3c, 0x35, 0x2b, 0x15, 0x28, 0xf2, 0x3d, 0x20, 0xa4, 0x22, 0x20,
-	0x97, 0xc5, 0xb8, 0xf2, 0xa7, 0xc6, 0xbb, 0x0e, 0x39, 0xe5, 0x8b, 0x62, 0x63, 0x6a, 0x51, 0xb8,
-	0xf9, 0x1a, 0xe6, 0xb0, 0xe7, 0x11, 0xc6, 0xda, 0x31, 0xed, 0xf5, 0x13, 0x26, 0x62, 0x37, 0x5f,
-	0xdf, 0xc8, 0xb6, 0x6b, 0x5e, 0x4f, 0x08, 0x63, 0xae, 0x40, 0xb8, 0x65, 0x7c, 0xce, 0xaa, 0xbe,
-	0x83, 0xf2, 0xf9, 0x55, 0x54, 0x02, 0xf3, 0xe4, 0xe0, 0xd9, 0xc1, 0xe1, 0xcb, 0x03, 0x27, 0xc7,
-	0x1b, 0xa2, 0xbb, 0xdd, 0xdc, 0x72, 0x34, 0x64, 0x83, 0xfe, 0xd2, 0x6d, 0x1d, 0x6f, 0x3b, 0x79,
-	0xde, 0x2e, 0x9b, 0x5b, 0x5b, 0x4e, 0x11, 0x95, 0xc1, 0xe2, 0xab, 0x6d, 0x6e, 0xe9, 0x68, 0x1e,
-	0x40, 0x58, 0xf2, 0xb1, 0x02, 0x9a, 0x03, 0xbb, 0xb9, 0x95, 0x9a, 0x06, 0x42, 0x30, 0x9f, 0x3e,
-	0xac, 0xe6, 0xcc, 0xca, 0x0d, 0xd0, 0x45, 0x34, 0xff, 0x2d, 0x2e, 0x93, 0x33, 0xf1, 0x0a, 0xac,
-	0xb4, 0x3e, 0xf0, 0x07, 0x79, 0x7d, 0x50, 0xb9, 0x2c, 0xc6, 0x68, 0x43, 0x1e, 0xef, 0x7c, 0xc6,
-	0xe3, 0x2d, 0x0e, 0x77, 0xf5, 0xbd, 0x06, 0x56, 0x5a, 0x21, 0x39, 0xbd, 0x13, 0x76, 0x47, 0xa9,
-	0x1b, 0x7c, 0x8c, 0xf6, 0x01, 0xc6, 0x45, 0x8d, 0x87, 0xbf, 0x90, 0xbd, 0xaa, 0xb9, 0x76, 0x5a,
-	0xd3, 0x18, 0x7a, 0x0d, 0x8e, 0xf8, 0x35, 0xc1, 0x0b, 0xfd, 0xf6, 0x1b, 0x12, 0x33, 0x1a, 0x06,
-	0x2a, 0x93, 0x1f, 0x4c, 0x07, 0x7d, 0xae, 0xd4, 0x2f, 0xa4, 0xd8, 0x5d, 0x88, 0x2e, 0x4e, 0x54,
-	0x7f, 0x2f, 0x82, 0xa9, 0xfa, 0x07, 0xba, 0x09, 0x10, 0x0d, 0x3b, 0x3e, 0xf5, 0xda, 0xe9, 0xc5,
-	0xbc, 0xec, 0xda, 0x72, 0x86, 0x47, 0xb3, 0x05, 0x56, 0x34, 0x8c, 0x19, 0x69, 0xd3, 0xee, 0x6c,
-	0xc7, 0xc9, 0x35, 0x85, 0xbe, 0xd5, 0xbd, 0x14, 0xa6, 0xe2, 0x87, 0x86, 0xa9, 0x0b, 0x0b, 0x98,
-	0xb1, 0xd0, 0xa3, 0x38, 0x49, 0x99, 0xba, 0x60, 0x6e, 0x64, 0x6a, 0xa0, 0xb5, 0xe6, 0x18, 0xc2,
-	0x5f, 0x30, 0x8f, 0xcf, 0x9b, 0x0c, 0x9d, 0xc1, 0x47, 0xd8, 0x93, 0x3f, 0xa4, 0xf4, 0x63, 0xc2,
-	0xfa, 0xa1, 0xdf, 0x65, 0xaa, 0xb9, 0x3e, 0xca, 0xf8, 0x1e, 0x81, 0x39, 0x1e, 0x53, 0x5c, 0x07,
-	0x5f, 0x9a, 0xa9, 0x3c, 0x81, 0xb9, 0x0b, 0xde, 0xfc, 0xd7, 0xc7, 0xb9, 0x0e, 0xc6, 0x5b, 0xc2,
-	0xcf, 0xa4, 0x2a, 0xcf, 0xca, 0xaa, 0xfc, 0x00, 0xce, 0xe5, 0xb7, 0xa1, 0x35, 0xb8, 0xd6, 0x25,
-	0x91, 0x1f, 0x8e, 0x06, 0x24, 0x48, 0x26, 0x9b, 0x11, 0xd0, 0x39, 0xf7, 0xe3, 0xc9, 0xda, 0x58,
-	0x83, 0x1e, 0xc2, 0xe2, 0x19, 0x19, 0xb5, 0x07, 0x38, 0xc0, 0x3d, 0x72, 0x49, 0x26, 0x5f, 0x78,
-	0xfd, 0x8c, 0x8c, 0xf6, 0xc7, 0xcb, 0x63, 0xe5, 0x6e, 0xd1, 0xca, 0x3b, 0x85, 0xdd, 0xa2, 0x65,
-	0x3a, 0x56, 0xd5, 0x80, 0x22, 0xef, 0x74, 0xd5, 0x23, 0x58, 0xb8, 0x94, 0x98, 0xbc, 0xef, 0x0c,
-	0xf0, 0xb7, 0x61, 0xac, 0x9c, 0x90, 0x86, 0x98, 0xa5, 0x41, 0x18, 0xab, 0x77, 0x48, 0x83, 0xcf,
-	0x46, 0x38, 0xf1, 0xfa, 0x22, 0x0b, 0xe7, 0x5c, 0x69, 0x6c, 0x7e, 0xf3, 0xf5, 0xab, 0x1e, 0x4d,
-	0xfa, 0xc3, 0x4e, 0xcd, 0x0b, 0x07, 0xab, 0xfd, 0x2e, 0xf6, 0x56, 0x2e, 0xfc, 0x68, 0xb7, 0x42,
-	0xc8, 0x4a, 0x2f, 0x8e, 0xbc, 0x95, 0x5e, 0xb8, 0x32, 0x4c, 0xa8, 0xbf, 0x2a, 0x8e, 0x42, 0x67,
-	0x78, 0xba, 0x3a, 0xcd, 0x6f, 0x7b, 0x1d, 0x43, 0x3c, 0xde, 0xf8, 0x3b, 0x00, 0x00, 0xff, 0xff,
-	0xf0, 0x7e, 0x61, 0x64, 0x0a, 0x14, 0x00, 0x00,
+	// 2085 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x9a, 0xcd, 0x73, 0x1b, 0x49,
+	0x15, 0xc0, 0xf5, 0x3d, 0x33, 0x4f, 0xb2, 0x3d, 0xdb, 0x09, 0xc1, 0xa5, 0x25, 0xb5, 0x59, 0xed,
+	0x1e, 0xb2, 0x14, 0x96, 0xa3, 0x91, 0xad, 0x32, 0x64, 0x09, 0xd8, 0xb1, 0x13, 0x3b, 0xeb, 0x8f,
+	0xec, 0xd8, 0xce, 0x02, 0xae, 0x45, 0x69, 0x8d, 0xda, 0xd6, 0xe0, 0xd1, 0x8c, 0x6a, 0x3e, 0x92,
+	0x15, 0x1c, 0x38, 0x41, 0xf1, 0x71, 0xe1, 0x9f, 0xe0, 0xc6, 0x85, 0x2a, 0xfe, 0x07, 0x8e, 0x7b,
+	0xe1, 0xbf, 0xa0, 0x8a, 0x1b, 0x57, 0x8a, 0xea, 0xd7, 0x3d, 0x23, 0xc9, 0x09, 0x85, 0x34, 0xd2,
+	0x56, 0xed, 0x5e, 0x52, 0xfd, 0xf5, 0x7e, 0xef, 0xf5, 0x9b, 0xee, 0x7e, 0xef, 0xc9, 0x81, 0x07,
+	0xb6, 0xb7, 0x6e, 0xd1, 0x60, 0xc0, 0x7c, 0x87, 0x76, 0x02, 0xd9, 0x5c, 0xb7, 0x3c, 0x37, 0x60,
+	0x6e, 0x10, 0x05, 0xeb, 0x41, 0x48, 0x43, 0x26, 0xfe, 0xad, 0x0f, 0x7c, 0x2f, 0xf4, 0xc8, 0x87,
+	0xb6, 0x57, 0x1f, 0x49, 0xc8, 0x66, 0x3d, 0x91, 0xa8, 0xe3, 0xda, 0xda, 0x97, 0x2b, 0x50, 0x7a,
+	0x7c, 0x78, 0x36, 0x1c, 0x30, 0xf2, 0x02, 0xca, 0x81, 0xdd, 0x1f, 0x38, 0xac, 0x1d, 0x0e, 0x07,
+	0x6c, 0x35, 0x7b, 0x2f, 0x7b, 0x7f, 0xd9, 0x68, 0xd6, 0xa7, 0xc1, 0xd4, 0x05, 0xa2, 0x7e, 0x8a,
+	0xf2, 0xfb, 0x19, 0x13, 0x04, 0x29, 0xe6, 0x7a, 0x83, 0xd0, 0xf6, 0x5c, 0xc1, 0xcd, 0xdd, 0xcb,
+	0xde, 0x2f, 0xcf, 0xc8, 0x3d, 0x41, 0x79, 0xce, 0x15, 0x24, 0xe4, 0x3e, 0x07, 0xcd, 0xb1, 0x83,
+	0x50, 0x50, 0xf3, 0x48, 0x6d, 0xcc, 0x44, 0x3d, 0xb4, 0x83, 0x70, 0x3f, 0x63, 0xaa, 0x9c, 0x82,
+	0xc4, 0x97, 0xb0, 0x72, 0x69, 0x7f, 0xc1, 0xba, 0xed, 0x11, 0xb7, 0x80, 0xdc, 0xd6, 0x4c, 0xdc,
+	0x27, 0x9c, 0x21, 0xe1, 0x4b, 0x97, 0x71, 0x27, 0xf6, 0x85, 0xcf, 0x82, 0xc8, 0x91, 0xf4, 0x62,
+	0x0a, 0x5f, 0x98, 0x28, 0xcf, 0x7d, 0x21, 0x48, 0xc8, 0x3d, 0x02, 0xb5, 0x4f, 0x07, 0x02, 0x5a,
+	0x42, 0xe8, 0x83, 0x99, 0xa0, 0x47, 0x74, 0xb0, 0x9f, 0x31, 0x95, 0x3e, 0x1d, 0xc4, 0x66, 0x86,
+	0xd1, 0xc0, 0x61, 0x0d, 0x41, 0x54, 0x52, 0x98, 0x79, 0x86, 0xf2, 0xdc, 0x4c, 0x41, 0x9a, 0xe0,
+	0x1a, 0x82, 0xab, 0xa6, 0xe5, 0x1a, 0x09, 0xd7, 0x98, 0xe0, 0x36, 0x05, 0x57, 0x4b, 0xcb, 0x6d,
+	0x26, 0xdc, 0x66, 0xec, 0x56, 0xea, 0x0e, 0x05, 0x14, 0x52, 0xb8, 0x75, 0xdb, 0x1d, 0x72, 0xb7,
+	0x52, 0x77, 0xc8, 0xbb, 0xd5, 0x43, 0x28, 0x89, 0x93, 0x4c, 0x76, 0xa0, 0x68, 0xbb, 0x2e, 0xf3,
+	0xf1, 0x96, 0x95, 0x8d, 0xef, 0xcd, 0x42, 0x35, 0x85, 0x68, 0xf5, 0x19, 0x14, 0xf8, 0xb9, 0x5a,
+	0x08, 0x8b, 0x82, 0x96, 0x9c, 0xda, 0x45, 0x00, 0x89, 0x0e, 0x79, 0x87, 0xb9, 0x78, 0xd9, 0x97,
+	0x4c, 0xde, 0xac, 0xfe, 0x36, 0x0b, 0x25, 0x71, 0x76, 0xc9, 0xc7, 0x90, 0xf3, 0xae, 0x53, 0xd1,
+	0x73, 0xde, 0x35, 0x79, 0x04, 0x79, 0xe6, 0xfb, 0xf2, 0x1d, 0x99, 0x4d, 0x9c, 0x0b, 0x56, 0x7f,
+	0x9f, 0x85, 0xfc, 0x11, 0x1d, 0x70, 0xce, 0x35, 0x1b, 0xa6, 0x32, 0x83, 0x0b, 0x72, 0x37, 0xbd,
+	0xa2, 0x4e, 0xc4, 0x52, 0x59, 0x22, 0x44, 0xf9, 0x89, 0x10, 0x17, 0x85, 0xd3, 0xf8, 0x31, 0x7b,
+	0x90, 0xce, 0xe9, 0x28, 0x5a, 0xfd, 0x53, 0x56, 0xe2, 0x8c, 0x45, 0xe0, 0x62, 0x46, 0x23, 0xdd,
+	0x06, 0x51, 0xb4, 0xfa, 0x8f, 0xd8, 0xa4, 0xe6, 0xd7, 0xc5, 0xa4, 0x98, 0x61, 0xc8, 0x98, 0x91,
+	0x82, 0x61, 0x54, 0x8b, 0x90, 0xdf, 0x76, 0x87, 0xb5, 0xdf, 0x64, 0xa1, 0x24, 0x62, 0x1e, 0x51,
+	0xa1, 0xb0, 0x73, 0x72, 0x72, 0xa8, 0x67, 0x88, 0x02, 0xf9, 0x83, 0xa6, 0xa1, 0x67, 0xb1, 0xd1,
+	0xda, 0xd0, 0x73, 0xa4, 0x04, 0xb9, 0xf3, 0x2d, 0x3d, 0xcf, 0x07, 0xce, 0x9b, 0x86, 0x5e, 0xc0,
+	0x46, 0x6b, 0x43, 0x2f, 0x72, 0xa9, 0xf3, 0x86, 0xb1, 0xa5, 0x97, 0xb0, 0x65, 0x6c, 0xb6, 0x74,
+	0x05, 0x5b, 0x9b, 0x0d, 0x43, 0x57, 0xb1, 0x75, 0x7c, 0x70, 0xa6, 0x6b, 0x04, 0xa0, 0x74, 0x7a,
+	0x66, 0x1e, 0x1c, 0x3f, 0xd5, 0x81, 0x0b, 0x7f, 0xb2, 0xf7, 0x53, 0xbd, 0x8c, 0xd3, 0xe6, 0xde,
+	0x13, 0xbd, 0xb2, 0x03, 0xa0, 0xbe, 0xa2, 0xbe, 0x4d, 0xdd, 0x30, 0xa8, 0xfd, 0x0a, 0x94, 0xc7,
+	0x87, 0x2f, 0xf8, 0xe9, 0x22, 0x7b, 0xa0, 0x58, 0xce, 0x28, 0x9a, 0xcf, 0xba, 0xd7, 0x92, 0xe5,
+	0xe0, 0x2b, 0xf8, 0x11, 0xe8, 0x01, 0xf3, 0x6d, 0xea, 0xd8, 0xbf, 0x64, 0xdd, 0xf6, 0xe8, 0xcc,
+	0x57, 0xcc, 0x95, 0xd1, 0x38, 0x6a, 0xac, 0xfd, 0xfd, 0xdb, 0xb0, 0x22, 0xb5, 0x1f, 0xb8, 0x41,
+	0x48, 0x5d, 0x6b, 0x61, 0x56, 0x7c, 0x3a, 0x79, 0xdd, 0x1e, 0x4e, 0x0b, 0x99, 0x30, 0xa6, 0x8e,
+	0xbd, 0xf8, 0xf6, 0xfd, 0xb9, 0x0c, 0x45, 0xe1, 0xa9, 0xf7, 0x00, 0x3a, 0x9e, 0xe7, 0xc8, 0xcd,
+	0x71, 0x33, 0xd5, 0xfd, 0x8c, 0xa9, 0xf1, 0x31, 0xb1, 0x80, 0x40, 0xde, 0x6e, 0x1a, 0xa8, 0xbb,
+	0xb8, 0x9f, 0x31, 0x79, 0x07, 0xc7, 0x5a, 0x1b, 0x78, 0x8c, 0xf2, 0x38, 0xd6, 0xda, 0x20, 0x3a,
+	0xe4, 0xa2, 0x2d, 0xcc, 0x1a, 0xf8, 0xb2, 0x5c, 0xb4, 0xc5, 0x57, 0x45, 0x4d, 0x03, 0x43, 0xfd,
+	0x12, 0x5f, 0x15, 0x09, 0xc9, 0xa8, 0xb5, 0x81, 0x91, 0xba, 0x80, 0x63, 0xad, 0x0d, 0xf2, 0x1c,
+	0x0a, 0x51, 0xc3, 0xd8, 0x92, 0xc1, 0xf6, 0x07, 0xe9, 0xb6, 0xc7, 0x0f, 0xd3, 0x7e, 0xc6, 0x44,
+	0x12, 0x12, 0x8d, 0xcd, 0x96, 0x0c, 0xb3, 0x69, 0x89, 0xc6, 0x66, 0x0b, 0x89, 0xc6, 0x66, 0x0b,
+	0x89, 0x9b, 0x0d, 0x43, 0x06, 0xd8, 0xb4, 0xc4, 0xcd, 0x86, 0x81, 0xc4, 0xcd, 0x86, 0x41, 0x7e,
+	0x0c, 0x85, 0xc8, 0xb5, 0x43, 0x19, 0x5d, 0xbf, 0x3b, 0x1d, 0xf1, 0xdc, 0xb5, 0x43, 0x24, 0xb8,
+	0x76, 0x48, 0xee, 0x82, 0x16, 0x84, 0xbe, 0xfc, 0x72, 0xe5, 0x7b, 0xd9, 0xfb, 0x1a, 0xcf, 0xe9,
+	0x82, 0xd0, 0x17, 0x1f, 0xee, 0x87, 0xe2, 0x95, 0xaf, 0x20, 0xff, 0xa3, 0xe9, 0xf8, 0x9f, 0x30,
+	0x1e, 0xb6, 0xf1, 0x91, 0xdf, 0x85, 0x42, 0xe4, 0xb3, 0xcb, 0xd5, 0x25, 0x94, 0xaf, 0x4f, 0x2d,
+	0x5f, 0x3f, 0x37, 0xd9, 0x25, 0xda, 0xe8, 0xb3, 0x4b, 0x42, 0xa1, 0x22, 0x53, 0x60, 0x61, 0xe6,
+	0x32, 0xd2, 0x3e, 0x4e, 0xe7, 0xbf, 0x24, 0x19, 0x96, 0x69, 0xb5, 0xd8, 0xe7, 0x05, 0x00, 0x66,
+	0xad, 0x42, 0xc1, 0xca, 0x3c, 0x1f, 0x48, 0xa6, 0xae, 0x98, 0x5d, 0x0b, 0xf8, 0x35, 0xe8, 0x63,
+	0x89, 0xb1, 0x50, 0xa1, 0xa3, 0x8a, 0x1f, 0xa5, 0x53, 0x31, 0x9e, 0x22, 0x2f, 0x27, 0x29, 0xb2,
+	0x50, 0x46, 0xa1, 0x22, 0x73, 0x64, 0xa1, 0xe8, 0x9d, 0x79, 0x9c, 0x95, 0x64, 0xcb, 0x32, 0xef,
+	0x16, 0x2a, 0x7e, 0x02, 0x1a, 0x4f, 0x97, 0x05, 0x9f, 0x20, 0xff, 0xfb, 0xe9, 0xf8, 0x22, 0x71,
+	0xe6, 0xc9, 0x77, 0x62, 0xbc, 0xcc, 0x9c, 0x05, 0xfc, 0xd6, 0x3c, 0xc6, 0x27, 0x39, 0xb4, 0xcc,
+	0xc6, 0x27, 0x55, 0x18, 0x52, 0xc5, 0xed, 0xb9, 0x55, 0x18, 0x89, 0x0a, 0x63, 0x52, 0x45, 0x53,
+	0xaa, 0xf8, 0xd6, 0xdc, 0x2a, 0x9a, 0x89, 0x8a, 0xa6, 0x50, 0xf1, 0x3e, 0x94, 0x3b, 0xc3, 0x90,
+	0x05, 0x52, 0xc3, 0x1d, 0x1e, 0x4f, 0x78, 0xf6, 0x8d, 0x83, 0xb8, 0x64, 0x47, 0x91, 0x2f, 0x7e,
+	0xf5, 0x3b, 0x22, 0x4a, 0x92, 0xdb, 0x71, 0x08, 0xe0, 0x0f, 0xb4, 0x66, 0x8e, 0xcd, 0xf2, 0xc7,
+	0xe9, 0x7f, 0xcf, 0xf2, 0x87, 0xe6, 0xed, 0xb3, 0x17, 0x49, 0x46, 0xfe, 0xe9, 0xf8, 0xfc, 0x62,
+	0xc2, 0xcb, 0x85, 0x4c, 0xd0, 0x4f, 0xa1, 0x84, 0x03, 0xc1, 0x6a, 0xf6, 0x5e, 0x7e, 0x5e, 0xb6,
+	0x44, 0x55, 0xbf, 0x18, 0xcf, 0xd8, 0xef, 0x40, 0xc9, 0x61, 0xee, 0x55, 0xd8, 0x43, 0xeb, 0x97,
+	0x4c, 0xd9, 0x1b, 0xd3, 0x9c, 0x5b, 0x9c, 0xe6, 0xbf, 0x8e, 0x12, 0xf9, 0xa3, 0xb1, 0x44, 0x7e,
+	0x1e, 0x36, 0x0f, 0x95, 0xde, 0x35, 0x39, 0x19, 0xcf, 0xec, 0xe7, 0xe4, 0x71, 0xd2, 0xe8, 0x04,
+	0x7d, 0x2e, 0x52, 0xfe, 0x17, 0x37, 0xbe, 0xc4, 0xa3, 0xd4, 0x97, 0x7e, 0xcf, 0x0d, 0xfd, 0x61,
+	0xe2, 0x92, 0xbf, 0x64, 0x41, 0x8d, 0x07, 0xc9, 0xd1, 0x78, 0x5d, 0x31, 0x97, 0xc7, 0x31, 0x02,
+	0x7d, 0x05, 0x79, 0xcf, 0xcf, 0x93, 0xaa, 0xe3, 0x0c, 0x14, 0x1c, 0x6a, 0x37, 0x16, 0x61, 0xaf,
+	0x70, 0x47, 0xa3, 0xfa, 0xb7, 0x51, 0x1d, 0xf2, 0x95, 0x28, 0x18, 0x51, 0x8d, 0x45, 0x78, 0x45,
+	0x50, 0x8d, 0xea, 0x1f, 0x72, 0x49, 0xad, 0xf2, 0x0d, 0x32, 0x7b, 0x44, 0x6d, 0xca, 0x8a, 0x66,
+	0x01, 0xd4, 0x66, 0xed, 0x3f, 0x59, 0x28, 0x9f, 0x86, 0x9e, 0x2f, 0x33, 0x7b, 0xf2, 0x0c, 0x54,
+	0x6b, 0x3c, 0x3f, 0x2e, 0x1b, 0x6b, 0x33, 0xa9, 0xd9, 0xcf, 0x98, 0x8a, 0x25, 0x93, 0xe9, 0x03,
+	0x50, 0xa8, 0x65, 0x79, 0x91, 0x1b, 0x4a, 0x3f, 0x4c, 0x89, 0xda, 0x16, 0x42, 0xf8, 0x93, 0x8a,
+	0x68, 0x92, 0x43, 0x50, 0x2d, 0xcf, 0x0d, 0x7d, 0x6a, 0x85, 0x72, 0xf7, 0x53, 0xe6, 0x68, 0x8f,
+	0xa5, 0x14, 0x8f, 0xde, 0x31, 0x61, 0xa2, 0x8e, 0xfa, 0x63, 0x0e, 0x6e, 0x8d, 0x39, 0x20, 0x29,
+	0x67, 0xcc, 0x37, 0x1c, 0xb1, 0x99, 0xca, 0xdf, 0xdf, 0x08, 0x87, 0xc4, 0x0f, 0x68, 0xed, 0x9f,
+	0xc5, 0xb8, 0x54, 0xba, 0x0b, 0x9a, 0xed, 0x86, 0x63, 0x0e, 0xe0, 0x85, 0x8e, 0x6a, 0xbb, 0xe1,
+	0x5b, 0xe3, 0x7a, 0xee, 0xcd, 0xb8, 0xce, 0x8f, 0x12, 0x27, 0xf0, 0x5c, 0x52, 0x9a, 0x38, 0xe5,
+	0x76, 0x0f, 0xdc, 0x50, 0xe6, 0x8c, 0x8a, 0x2d, 0x9a, 0xe4, 0x03, 0xa8, 0x04, 0xa1, 0x6f, 0xbb,
+	0x57, 0x52, 0x5f, 0x41, 0x16, 0x00, 0x65, 0x31, 0xfa, 0x86, 0x7b, 0x8b, 0x0b, 0x74, 0x6f, 0x69,
+	0x5e, 0xf7, 0x92, 0x53, 0x90, 0x76, 0x0a, 0x67, 0x28, 0xb3, 0xfc, 0xc4, 0x78, 0x8a, 0x82, 0xd2,
+	0x1f, 0x10, 0x24, 0x3d, 0x72, 0x04, 0x9a, 0x4b, 0xfb, 0xac, 0xdb, 0xe6, 0x51, 0x48, 0x9d, 0xc5,
+	0xc6, 0x63, 0x2e, 0x26, 0x8a, 0x1f, 0xd5, 0x95, 0x6d, 0xf2, 0x14, 0x94, 0x8e, 0x7d, 0xd5, 0xb6,
+	0xdd, 0x50, 0x96, 0x7d, 0x53, 0x96, 0xef, 0x3b, 0xf6, 0xd5, 0x01, 0xfa, 0xae, 0xd4, 0xc1, 0x56,
+	0x5c, 0x89, 0x41, 0xca, 0x4a, 0x2c, 0xae, 0x14, 0xcb, 0xa9, 0x2b, 0xc5, 0xf7, 0x00, 0x1c, 0x2f,
+	0x39, 0x29, 0x15, 0x59, 0x7c, 0x6b, 0x7c, 0x6c, 0x32, 0xe1, 0xac, 0xbd, 0x0f, 0x8a, 0x3c, 0x6b,
+	0x3c, 0xb5, 0x1a, 0x4b, 0x19, 0x8a, 0x71, 0xc8, 0xaf, 0x7d, 0x08, 0x30, 0xfa, 0x02, 0x37, 0x56,
+	0x69, 0xc9, 0xaa, 0x87, 0x50, 0x12, 0x7e, 0x78, 0x7b, 0xfe, 0x49, 0xde, 0x05, 0xad, 0x63, 0x87,
+	0xed, 0xd7, 0x76, 0x37, 0xec, 0xc9, 0x1f, 0x4b, 0xd5, 0x8e, 0x1d, 0x7e, 0xc6, 0xfb, 0xb5, 0xdf,
+	0x15, 0x21, 0xcf, 0xbf, 0xc0, 0x11, 0x28, 0xb4, 0xdb, 0xf5, 0x59, 0x10, 0xc8, 0x07, 0xa7, 0x31,
+	0x7d, 0x19, 0xba, 0x2d, 0x04, 0xf1, 0x08, 0x8b, 0x26, 0x2f, 0x69, 0x7b, 0x34, 0xe8, 0xc9, 0x97,
+	0x66, 0x86, 0x92, 0x76, 0x9f, 0x06, 0x3d, 0xee, 0x4c, 0x2e, 0x9d, 0x14, 0xc6, 0xf9, 0xb9, 0x0a,
+	0xe3, 0xa7, 0x50, 0x74, 0x3c, 0x8b, 0x3a, 0xf2, 0xef, 0x2c, 0xeb, 0xd3, 0x63, 0x0e, 0xb9, 0xd8,
+	0x7e, 0xc6, 0x14, 0xf2, 0xd5, 0x0f, 0x40, 0x91, 0x5b, 0x25, 0xab, 0xa3, 0xdb, 0x9e, 0xc5, 0x5f,
+	0xa9, 0xe2, 0x6e, 0xb5, 0x0a, 0x05, 0xbe, 0x07, 0x42, 0xa4, 0x07, 0xc4, 0x34, 0xb6, 0xab, 0xff,
+	0xce, 0x42, 0x81, 0x9b, 0xc6, 0x27, 0x71, 0x63, 0x72, 0x12, 0xcd, 0x7c, 0x09, 0x4b, 0xd4, 0xb2,
+	0x58, 0x10, 0xb4, 0x7d, 0xfb, 0xaa, 0x17, 0x06, 0xe8, 0xbb, 0xe5, 0x69, 0x03, 0x6d, 0xbc, 0x6b,
+	0xfe, 0x9e, 0xb0, 0x20, 0x30, 0x11, 0x61, 0x56, 0xe8, 0x58, 0xaf, 0xf6, 0x1a, 0x2a, 0xe3, 0xb3,
+	0x44, 0x85, 0xc2, 0xf1, 0xc9, 0xf1, 0x9e, 0x9e, 0xe1, 0x2d, 0x73, 0x6f, 0x7b, 0x57, 0xcf, 0x12,
+	0x0d, 0x8a, 0x9f, 0x99, 0x07, 0x67, 0x7b, 0x7a, 0x8e, 0x28, 0x90, 0xdf, 0xde, 0xdd, 0xd5, 0x0b,
+	0xa4, 0x02, 0x2a, 0x9f, 0x6d, 0xf3, 0x5e, 0x91, 0x2c, 0x03, 0x60, 0x4f, 0x2c, 0xcb, 0x93, 0x25,
+	0xd0, 0xb6, 0x77, 0xe3, 0x6e, 0x89, 0x10, 0x58, 0x8e, 0x17, 0xcb, 0x31, 0xa5, 0xfa, 0x2e, 0x14,
+	0xd1, 0x95, 0x6f, 0x73, 0xca, 0xe8, 0x42, 0x5c, 0x80, 0x1a, 0x3f, 0x0e, 0x7c, 0x21, 0x7f, 0x1c,
+	0xe4, 0x41, 0xc6, 0x36, 0x79, 0x28, 0xee, 0x76, 0x6e, 0xc6, 0xbb, 0x8d, 0x37, 0xbb, 0xf6, 0x65,
+	0x16, 0xd4, 0xf8, 0x79, 0xe4, 0xf4, 0x8e, 0xd7, 0x1d, 0xc6, 0x66, 0xf0, 0x36, 0x39, 0x02, 0x48,
+	0x5e, 0xb4, 0xb8, 0x94, 0x99, 0xf1, 0x49, 0x33, 0xb5, 0xf8, 0x41, 0x0b, 0xc8, 0x4b, 0xd0, 0xf1,
+	0x4f, 0xa4, 0x96, 0xe7, 0xb4, 0x5f, 0x31, 0x3f, 0xb0, 0x3d, 0x57, 0x1e, 0xe3, 0x29, 0x23, 0xf9,
+	0x73, 0x29, 0xfd, 0x42, 0x08, 0x9b, 0x2b, 0x83, 0xc9, 0x81, 0xda, 0xbf, 0x0a, 0xa0, 0xc8, 0xe0,
+	0x41, 0xee, 0x02, 0x0c, 0xa2, 0x8e, 0x63, 0x5b, 0xed, 0xb8, 0x2a, 0xa8, 0x98, 0x9a, 0x18, 0x11,
+	0x97, 0x1b, 0xfa, 0xd4, 0x76, 0xdb, 0x83, 0xc8, 0x0f, 0x58, 0xba, 0xdb, 0x64, 0x6a, 0x9c, 0xf0,
+	0x9c, 0x03, 0x6e, 0xb8, 0xaa, 0x30, 0xaf, 0xab, 0xba, 0xb0, 0x42, 0x83, 0xc0, 0xb3, 0x6c, 0x1a,
+	0xc6, 0xcc, 0xe2, 0x2c, 0x95, 0xa4, 0x74, 0x42, 0x7d, 0x3b, 0x81, 0x70, 0x05, 0xcb, 0x74, 0xbc,
+	0x1b, 0x90, 0x6b, 0x78, 0x87, 0x5a, 0xe2, 0x2f, 0xc4, 0x3d, 0x9f, 0x05, 0x3d, 0xcf, 0xe9, 0x06,
+	0x32, 0xba, 0x3e, 0x9a, 0x51, 0x0f, 0x62, 0xce, 0x12, 0x8a, 0xa9, 0xd3, 0x1b, 0x23, 0xd5, 0x27,
+	0xb0, 0x34, 0x61, 0xcd, 0xff, 0xfb, 0x40, 0x77, 0xa0, 0xf4, 0x9a, 0xf1, 0x4b, 0x29, 0xdf, 0x67,
+	0xd9, 0xab, 0xfe, 0x1a, 0xf4, 0x9b, 0xda, 0x48, 0x03, 0x6e, 0x77, 0xd9, 0xc0, 0xf1, 0x86, 0x7d,
+	0xe6, 0x86, 0xa3, 0xcd, 0xc8, 0xaa, 0xfc, 0xd6, 0x68, 0x2e, 0x91, 0x21, 0x5b, 0xb0, 0x7a, 0xcd,
+	0x86, 0xed, 0x3e, 0x75, 0xe9, 0x15, 0xbb, 0x21, 0x26, 0x14, 0xde, 0xb9, 0x66, 0xc3, 0xa3, 0x64,
+	0x3a, 0x91, 0x7c, 0x56, 0x50, 0x73, 0x7a, 0xfe, 0x59, 0x41, 0x55, 0x74, 0xb5, 0x56, 0x82, 0x02,
+	0x0f, 0x75, 0xb5, 0x53, 0x58, 0xb9, 0x71, 0x38, 0x79, 0xe0, 0xe9, 0xd3, 0x5f, 0x78, 0xbe, 0x34,
+	0x42, 0x74, 0x70, 0xd4, 0x76, 0x3d, 0x5f, 0xea, 0x10, 0x1d, 0x3e, 0x3a, 0xa0, 0xa1, 0xd5, 0xc3,
+	0x73, 0xb8, 0x64, 0x8a, 0xce, 0xce, 0xe7, 0x3f, 0xbb, 0xb8, 0xb2, 0xc3, 0x5e, 0xd4, 0xa9, 0x5b,
+	0x5e, 0x7f, 0xbd, 0xd7, 0xa5, 0xd6, 0xda, 0xc4, 0xff, 0x46, 0x58, 0x63, 0x6c, 0xed, 0xca, 0x1f,
+	0x58, 0x6b, 0x57, 0xde, 0x5a, 0x14, 0xda, 0xce, 0x3a, 0x5e, 0x87, 0x4e, 0x74, 0xb9, 0x3e, 0xcd,
+	0x7f, 0x5a, 0xe8, 0x94, 0x70, 0x79, 0xf3, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xcf, 0xab, 0x1c,
+	0xf7, 0xe3, 0x20, 0x00, 0x00,
 }

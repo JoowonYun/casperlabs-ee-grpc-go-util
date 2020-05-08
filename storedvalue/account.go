@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	ASSOCIATED_KEY_SIZE_LENGTH       = 1
+	ASSOCIATED_KEY_SIZE_LENGTH       = 4
 	ASSOCIATED_KEY_LENGTH            = ADDRESS_LENGTH
-	ASSOCIATED_KEY_WEIGHT_LENGTH     = UINT32_LENGTH
+	ASSOCIATED_KEY_WEIGHT_LENGTH     = 1
 	ASSOCIATED_KEY_SERIALIZED_LENGTH = ASSOCIATED_KEY_LENGTH + ASSOCIATED_KEY_WEIGHT_LENGTH
 
 	ACTION_THRESHOLD_DEPLOYMENT_LENGTH     = 1
@@ -20,16 +20,16 @@ const (
 type Account struct {
 	PublicKey        []byte
 	NamedKeys        NamedKeys
-	PurseId          URef
+	MainPurse        URef
 	AssociatedKeys   []AssociatedKey
 	ActionThresholds ActionThresholds
 }
 
-func NewAccount(publicKey []byte, namedKeys NamedKeys, purseID URef, associatedKeys []AssociatedKey, actionThresholds ActionThresholds) Account {
+func NewAccount(publicKey []byte, namedKeys NamedKeys, purseId URef, associatedKeys []AssociatedKey, actionThresholds ActionThresholds) Account {
 	return Account{
 		PublicKey:        publicKey,
 		NamedKeys:        namedKeys,
-		PurseId:          purseID,
+		MainPurse:        purseId,
 		AssociatedKeys:   associatedKeys,
 		ActionThresholds: actionThresholds,
 	}
@@ -66,9 +66,9 @@ func (a Account) FromBytes(src []byte) (account Account, err error, pos int) {
 
 	// Associate Key
 	associatedKeys := []AssociatedKey{}
-	associateKeySize := int(src[pos])
-	pos += ASSOCIATED_KEY_SIZE_LENGTH
-
+	associatedKeysSizeBytes := src[pos : pos+SIZE_LENGTH]
+	pos += SIZE_LENGTH
+	associateKeySize := int(binary.LittleEndian.Uint32(associatedKeysSizeBytes))
 	for i := 0; i < associateKeySize; i++ {
 		var associatedKey AssociatedKey
 		associatedKey, err, length := associatedKey.FromBytes(src[pos:])
@@ -101,7 +101,7 @@ func (a Account) ToBytes() []byte {
 		res = append(res, namedKey.ToBytes()...)
 	}
 
-	res = append(res, a.PurseId.ToBytes()...)
+	res = append(res, a.MainPurse.ToBytes()...)
 
 	associatedKeysLengthBytes := make([]byte, SIZE_LENGTH)
 	binary.LittleEndian.PutUint32(associatedKeysLengthBytes, uint32(len(a.AssociatedKeys)))
@@ -127,7 +127,7 @@ func (a Account) ToStateValue() *state.Account {
 
 	return &state.Account{
 		PublicKey:        a.PublicKey,
-		PurseId:          a.PurseId.ToStateValue(),
+		MainPurse:        a.MainPurse.ToStateValue(),
 		NamedKeys:        stateNamedKeys,
 		AssociatedKeys:   stateAssociatedKeys,
 		ActionThresholds: a.ActionThresholds.ToStateValue(),
@@ -154,7 +154,7 @@ func (a Account) FromStateValue(state *state.Account) (Account, error) {
 	return NewAccount(
 		state.GetPublicKey(),
 		namedKeys,
-		NewURef(state.GetPurseId().GetUref(), state.GetPurseId().GetAccessRights()),
+		NewURef(state.GetMainPurse().GetUref(), state.GetMainPurse().GetAccessRights()),
 		associatedKeys,
 		NewActionThresholds(state.ActionThresholds.GetDeploymentThreshold(), state.ActionThresholds.GetKeyManagementThreshold())), nil
 }
@@ -180,7 +180,7 @@ func (a AssociatedKey) FromBytes(src []byte) (associatedKey AssociatedKey, err e
 
 	publicKey := src[pos:ASSOCIATED_KEY_LENGTH]
 	pos += ASSOCIATED_KEY_LENGTH
-	weight := binary.BigEndian.Uint32(src[pos : pos+ASSOCIATED_KEY_WEIGHT_LENGTH])
+	weight := uint32(src[pos])
 	pos += ASSOCIATED_KEY_WEIGHT_LENGTH
 
 	return NewAssociatedKey(publicKey, weight), nil, pos

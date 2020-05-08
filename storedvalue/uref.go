@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	UREF_OPTION_TAG_SERIALIZED_LENGTH    = 1
 	UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH = 1
 )
 
@@ -33,34 +32,19 @@ func (u URef) GetAccessRights() state.Key_URef_AccessRights {
 func (u URef) ToBytes() []byte {
 	res := u.Address
 
-	if state.Key_URef_UNKNOWN == u.AccessRights {
-		res = append(res, byte(u.AccessRights))
-		return res
-	}
-
-	res = append(res, []byte{byte(TAG_I32), byte(u.AccessRights)}...)
+	res = append(res, byte(u.AccessRights))
 	return res
 }
 
 func (u URef) FromBytes(src []byte) (uref URef, err error, pos int) {
-	if len(src) < ADDRESS_LENGTH+UREF_OPTION_TAG_SERIALIZED_LENGTH {
-		return URef{}, fmt.Errorf("URef bytes more than %d, but %d", ADDRESS_LENGTH+UREF_OPTION_TAG_SERIALIZED_LENGTH, len(src)), pos
+	if len(src) < ADDRESS_LENGTH+UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH {
+		return URef{}, fmt.Errorf("URef bytes more than %d, but %d", ADDRESS_LENGTH+UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH, len(src)), pos
 	}
 
 	u.Address = src[:ADDRESS_LENGTH]
 	pos = ADDRESS_LENGTH
-
-	if src[pos] == byte(TAG_I32) {
-		if len(src) < ADDRESS_LENGTH+UREF_OPTION_TAG_SERIALIZED_LENGTH+UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH {
-			return URef{}, fmt.Errorf("URef bytes must be %d, but %d", ADDRESS_LENGTH+UREF_OPTION_TAG_SERIALIZED_LENGTH+UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH, len(src)), pos
-		}
-		pos += UREF_OPTION_TAG_SERIALIZED_LENGTH
-		u.AccessRights = state.Key_URef_AccessRights(src[pos])
-		pos += UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH
-	} else {
-		u.AccessRights = state.Key_URef_UNKNOWN
-		pos += UREF_OPTION_TAG_SERIALIZED_LENGTH
-	}
+	u.AccessRights = state.Key_URef_AccessRights(src[pos])
+	pos += UREF_ACCESS_RIGHTS_SERIALIZED_LENGTH
 
 	return u, nil, pos
 }
@@ -70,4 +54,8 @@ func (u URef) ToStateValue() *state.Key_URef {
 		Uref:         u.Address,
 		AccessRights: u.AccessRights,
 	}
+}
+
+func (u URef) FromStateValue(uref *state.Key_URef) (URef, error) {
+	return NewURef(uref.GetUref(), u.AccessRights), nil
 }

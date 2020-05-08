@@ -8,7 +8,7 @@ import (
 )
 
 func TestURefToByteUnknown(t *testing.T) {
-	uref := NewURef(make([]byte, 32), state.Key_URef_UNKNOWN)
+	uref := NewURef(make([]byte, 32), state.Key_URef_NONE)
 
 	res := uref.ToBytes()
 	assert.Equal(
@@ -27,7 +27,7 @@ func TestURefToByteReadAddWrite(t *testing.T) {
 		t,
 		[]byte{
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			1, 7},
+			7},
 		res)
 }
 
@@ -46,7 +46,7 @@ func TestURefFromByteUnknown(t *testing.T) {
 		uref.GetAddress())
 	assert.Equal(
 		t,
-		state.Key_URef_UNKNOWN,
+		state.Key_URef_NONE,
 		uref.GetAccessRights())
 	assert.Equal(t, len(src), pos)
 }
@@ -54,7 +54,7 @@ func TestURefFromByteUnknown(t *testing.T) {
 func TestURefFromByteReadAddWrite(t *testing.T) {
 	src := []byte{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		1, 7}
+		7}
 
 	var uref URef
 	uref, err, pos := uref.FromBytes(src)

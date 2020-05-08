@@ -67,7 +67,7 @@ func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 
 	for _, deployArg := range src {
 		var clValue storedvalue.CLValue
-		clValue, err := clValue.FromDeployArgValue(deployArg.GetValue())
+		clValue, err := clValue.FromDeployArgValue(deployArg.GetValue().GetValue())
 		if err != nil {
 			return nil, err
 		}
@@ -238,8 +238,8 @@ func AddDeploy(deploys []*ipc.DeployItem, deploy *ipc.DeployItem) []*ipc.DeployI
 }
 
 func GenesisConfigMock(
-	chainName string, address []byte, balance string, bondedAmount string, protocolVersion *state.ProtocolVersion,
-	mapCosts map[string]uint32, mintInstallWasmPath string, posInstallWasmPath string) (
+	chainName string, genesisAccount []*ipc.ChainSpec_GenesisAccount, stateInfo []string, protocolVersion *state.ProtocolVersion,
+	mapCosts map[string]uint32, mintInstallWasmPath string, posInstallWasmPath string, standardPaymentInstallWasmPath string) (
 	*ipc.ChainSpec_GenesisConfig, error) {
 	genesisConfig := ipc.ChainSpec_GenesisConfig{}
 	genesisConfig.Name = chainName
@@ -247,16 +247,15 @@ func GenesisConfigMock(
 	genesisConfig.ProtocolVersion = protocolVersion
 
 	// load mint_install.wasm, pos_install.wasm
+
 	genesisConfig.MintInstaller = LoadWasmFile(mintInstallWasmPath)
 	genesisConfig.PosInstaller = LoadWasmFile(posInstallWasmPath)
+	genesisConfig.StandardPaymentInstaller = LoadWasmFile(standardPaymentInstallWasmPath)
 
 	// GenesisAccount
-	accounts := make([]*ipc.ChainSpec_GenesisAccount, 1)
-	accounts[0] = &ipc.ChainSpec_GenesisAccount{}
-	accounts[0].PublicKey = address
-	accounts[0].Balance = &state.BigInt{Value: balance, BitWidth: 512}
-	accounts[0].BondedAmount = &state.BigInt{Value: bondedAmount, BitWidth: 512}
-	genesisConfig.Accounts = accounts
+	genesisConfig.Accounts = genesisAccount
+
+	genesisConfig.StateInfos = stateInfo
 
 	// CostTable
 	genesisConfig.Costs = &ipc.ChainSpec_CostTable{
@@ -273,8 +272,20 @@ func GenesisConfigMock(
 			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
 
 	genesisConfig.DeployConfig = &ipc.ChainSpec_DeployConfig{
-		MaxTtlMillis:    86400000,
-		MaxDependencies: 10,
+		MaxTtlMillis:      86400000,
+		MaxDependencies:   10,
+		MaxBlockSizeBytes: 10485760,
+		MaxBlockCost:      0,
+	}
+
+	genesisConfig.HighwayConfig = &ipc.ChainSpec_HighwayConfig{
+		GenesisEraStartTimestamp:   1583712000000,
+		EraDurationMillis:          604800000,
+		BookingDurationMillis:      864000000,
+		EntropyDurationMillis:      10800000,
+		VotingPeriodDurationMillis: 172800000,
+		VotingPeriodSummitLevel:    0,
+		Ftt:                        0.1,
 	}
 
 	return &genesisConfig, nil

@@ -13,7 +13,7 @@ $ go get -u github.com/hdac-io/casperlabs-ee-grpc-go-util
 ## Example
 - Running to Casperlabs Execution-Engine 
 ```bash
-$ git clone https://github.com/CasperLabs/CasperLabs.git
+$ git clone https://github.com/hdac-io/CasperLabs.git
 
 $ cd execution-engine
 
@@ -37,15 +37,17 @@ func main() {
 }
 ```
 
-## Running integration test
-- Revise to unix socket path in "./example/hello.go"
-- $ ./target/debug/casperlabs-engine-grpc-server ~/.casperlabs/.casper-node.sock
+## Integration test
+- Running casperlabs-engine-grpc-server
+```bash
+$ $EXECUTION_ENGINE_HOME/target/debug/casperlabs-engine-grpc-server ~/.casperlabs/.casper-node.sock
+```
 - Run
 ```bash
 $ make integration-test
 ```
 
-## Testing
+## Unit test
 ```bash
 $ make test
 ```

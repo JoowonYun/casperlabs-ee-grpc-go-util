@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus"
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
 )
 
@@ -192,6 +191,7 @@ func (c CLValue) ToStateValues() *state.Value {
 
 	case TAG_FIXED_LIST:
 		value = &state.Value{Value: &state.Value_BytesValue{BytesValue: c.Bytes}}
+	// TODO
 	case TAG_RESULT:
 
 	case TAG_MAP:
@@ -310,87 +310,84 @@ func (c CLValue) FromStateValue(value *state.Value) (CLValue, error) {
 	return c, nil
 }
 
-func (c CLValue) FromDeployArgValue(value *consensus.Deploy_Arg_Value) (CLValue, error) {
+func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue, error) {
 	switch value.GetValue().(type) {
-	case *consensus.Deploy_Arg_Value_IntValue:
+	case *state.CLValueInstance_Value_I32:
 		res := make([]byte, INT32_LENGTH)
-		binary.LittleEndian.PutUint32(res, uint32(value.GetIntValue()))
-
+		binary.LittleEndian.PutUint32(res, uint32(value.GetI32()))
 		c.Bytes = res
 		c.Tags = []CL_TYPE_TAG{TAG_I32}
-	case *consensus.Deploy_Arg_Value_BytesValue:
-		c.Bytes = value.GetBytesValue()
-		c.Tags = []CL_TYPE_TAG{TAG_FIXED_LIST, TAG_U8}
-	case *consensus.Deploy_Arg_Value_IntList:
-		res := make([]byte, SIZE_LENGTH)
-		binary.LittleEndian.PutUint32(res, uint32(len(value.GetIntList().GetValues())))
-
-		for _, intValue := range value.GetIntList().GetValues() {
-			intBytes := make([]byte, INT32_LENGTH)
-			binary.LittleEndian.PutUint32(intBytes, uint32(intValue))
-			res = append(res, intBytes...)
-		}
-
+	case *state.CLValueInstance_Value_I64:
+		res := make([]byte, LONG_LENGTH)
+		binary.LittleEndian.PutUint64(res, uint64(value.GetI64()))
 		c.Bytes = res
-		c.Tags = []CL_TYPE_TAG{TAG_LIST, TAG_I32}
-	case *consensus.Deploy_Arg_Value_StringValue:
-		res := make([]byte, SIZE_LENGTH)
-		binary.LittleEndian.PutUint32(res, uint32(len(value.GetStringValue())))
-		res = append(res, []byte(value.GetStringValue())...)
-
+		c.Tags = []CL_TYPE_TAG{TAG_I64}
+	case *state.CLValueInstance_Value_U8:
+		c.Bytes = []byte{byte(value.GetU8())}
+		c.Tags = []CL_TYPE_TAG{TAG_U8}
+	case *state.CLValueInstance_Value_U32:
+		res := make([]byte, INT32_LENGTH)
+		binary.LittleEndian.PutUint32(res, uint32(value.GetU32()))
 		c.Bytes = res
-		c.Tags = []CL_TYPE_TAG{TAG_STRING}
-	case *consensus.Deploy_Arg_Value_StringList:
-		res := make([]byte, SIZE_LENGTH)
-		binary.LittleEndian.PutUint32(res, uint32(len(value.GetStringList().GetValues())))
-
-		for _, stringValue := range value.GetStringList().GetValues() {
-			stringLengthBytes := make([]byte, SIZE_LENGTH)
-			binary.LittleEndian.PutUint32(stringLengthBytes, uint32(len(stringValue)))
-
-			res = append(res, stringLengthBytes...)
-			res = append(res, []byte(stringValue)...)
-		}
-
+		c.Tags = []CL_TYPE_TAG{TAG_U32}
+	case *state.CLValueInstance_Value_U64:
+		res := make([]byte, LONG_LENGTH)
+		binary.LittleEndian.PutUint64(res, uint64(value.GetU64()))
 		c.Bytes = res
-		c.Tags = []CL_TYPE_TAG{TAG_LIST, TAG_STRING}
-	case *consensus.Deploy_Arg_Value_BigInt:
-		bigIntValue, ok := new(big.Int).SetString(value.GetBigInt().GetValue(), 10)
+		c.Tags = []CL_TYPE_TAG{TAG_U64}
+	case *state.CLValueInstance_Value_U128:
+		bigIntValue, ok := new(big.Int).SetString(value.GetU512().GetValue(), 10)
 		if !ok {
 			return CLValue{}, errors.New("Bigint data is invalid.")
 		}
 		bytes := reverseBytes(bigIntValue.Bytes())
 		res := []byte{byte(len(bytes))}
-
-		switch value.GetBigInt().GetBitWidth() {
-		case 128:
-			c.Tags = []CL_TYPE_TAG{TAG_U128}
-		case 256:
-			c.Tags = []CL_TYPE_TAG{TAG_U256}
-		case 512:
-			c.Tags = []CL_TYPE_TAG{TAG_U512}
-		default:
+		c.Tags = []CL_TYPE_TAG{TAG_U128}
+		c.Bytes = append(res, bytes...)
+	case *state.CLValueInstance_Value_U256:
+		bigIntValue, ok := new(big.Int).SetString(value.GetU512().GetValue(), 10)
+		if !ok {
 			return CLValue{}, errors.New("Bigint data is invalid.")
 		}
-
+		bytes := reverseBytes(bigIntValue.Bytes())
+		res := []byte{byte(len(bytes))}
+		c.Tags = []CL_TYPE_TAG{TAG_U256}
 		c.Bytes = append(res, bytes...)
-	case *consensus.Deploy_Arg_Value_Key:
+	case *state.CLValueInstance_Value_U512:
+		bigIntValue, ok := new(big.Int).SetString(value.GetU512().GetValue(), 10)
+		if !ok {
+			return CLValue{}, errors.New("Bigint data is invalid.")
+		}
+		bytes := reverseBytes(bigIntValue.Bytes())
+		res := []byte{byte(len(bytes))}
+		c.Tags = []CL_TYPE_TAG{TAG_U512}
+		c.Bytes = append(res, bytes...)
+	case *state.CLValueInstance_Value_Unit:
+	case *state.CLValueInstance_Value_StrValue:
+		res := make([]byte, SIZE_LENGTH)
+		binary.LittleEndian.PutUint32(res, uint32(len(value.GetStrValue())))
+		res = append(res, []byte(value.GetStrValue())...)
+		c.Bytes = res
+		c.Tags = []CL_TYPE_TAG{TAG_STRING}
+	case *state.CLValueInstance_Value_Key:
 		var key Key
 		key, err := key.FromStateValue(value.GetKey())
 		if err != nil {
 			return CLValue{}, err
 		}
-
 		c.Bytes = key.ToBytes()
 		c.Tags = []CL_TYPE_TAG{TAG_KEY}
-	case *consensus.Deploy_Arg_Value_LongValue:
-		res := make([]byte, LONG_LENGTH)
-		binary.LittleEndian.PutUint64(res, uint64(value.GetLongValue()))
-		c.Bytes = res
+	case *state.CLValueInstance_Value_Uref:
+		var uref URef
+		uref, err := uref.FromStateValue(value.GetUref())
+		if err != nil {
+			return CLValue{}, err
+		}
+		c.Bytes = uref.ToBytes()
+		c.Tags = []CL_TYPE_TAG{TAG_UREF}
+	case *state.CLValueInstance_Value_OptionValue:
 
-		c.Tags = []CL_TYPE_TAG{TAG_I64}
-	case *consensus.Deploy_Arg_Value_OptionalValue:
-		clValue, err := c.FromDeployArgValue(value.GetOptionalValue())
+		clValue, err := c.FromDeployArgValue(value.GetOptionValue().GetValue())
 		if err != nil {
 			return CLValue{}, err
 		}
@@ -402,6 +399,17 @@ func (c CLValue) FromDeployArgValue(value *consensus.Deploy_Arg_Value) (CLValue,
 		}
 		c.Bytes = res
 		c.Tags = append([]CL_TYPE_TAG{TAG_OPTION}, clValue.Tags...)
+	// TODO
+	case *state.CLValueInstance_Value_ListValue:
+	case *state.CLValueInstance_Value_FixedListValue:
+	case *state.CLValueInstance_Value_ResultValue:
+	case *state.CLValueInstance_Value_MapValue:
+	case *state.CLValueInstance_Value_Tuple1Value:
+	case *state.CLValueInstance_Value_Tuple2Value:
+	case *state.CLValueInstance_Value_Tuple3Value:
+	case *state.CLValueInstance_Value_BytesValue:
+		c.Bytes = value.GetBytesValue()
+		c.Tags = []CL_TYPE_TAG{TAG_FIXED_LIST, TAG_U8}
 	default:
 		return CLValue{}, errors.New("ClValue data is invalid.")
 	}
