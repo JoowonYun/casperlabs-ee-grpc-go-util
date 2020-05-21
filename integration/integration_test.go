@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/grpc"
@@ -66,6 +65,8 @@ func TestUnbond(t *testing.T) {
 	amount := "10000000000000000"
 
 	rootStateHash, bonds := RunUnbond(client, rootStateHash, GENESIS_ADDRESS, amount, proxyHash, protocolVersion)
+	// step
+	rootStateHash, bonds = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
 	assert.Equal(t, "990000000000000000", bonds[0].GetStake().GetValue())
 
 	storedValue := RunQuery(client, rootStateHash, "address", GENESIS_ADDRESS, []string{"pos"}, protocolVersion)
@@ -112,6 +113,7 @@ func TestUndelegation(t *testing.T) {
 	amount := "100"
 
 	rootStateHash, bonds := RunUndelegate(client, rootStateHash, GENESIS_ADDRESS, GENESIS_ADDRESS, amount, proxyHash, protocolVersion)
+	rootStateHash, bonds = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
 	assert.Equal(t, "999999999999999900", bonds[0].GetStake().GetValue())
 
 	storedValue := RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
@@ -125,6 +127,7 @@ func TestRedelegation(t *testing.T) {
 	amount := "100"
 
 	rootStateHash, bonds := RunRedelegate(client, rootStateHash, GENESIS_ADDRESS, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
+	rootStateHash, bonds = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
 	assert.Equal(t, 2, len(bonds))
 
 	storedValue := RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
@@ -143,7 +146,7 @@ func TestVoteAndUnvote(t *testing.T) {
 	voter := storedValue.Contract.NamedKeys.GetVotingDappFromUser(GENESIS_ADDRESS)
 
 	assert.Equal(t, 1, len(voter))
-	assert.Equal(t, amount, voter[ADDRESS1_HEX])
+	assert.Equal(t, amount, voter[ADDRESS1_DAPP_HEX])
 
 	unvoteAmount := "23"
 	rootStateHash, _ = RunUnvote(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, unvoteAmount, proxyHash, protocolVersion)
@@ -151,9 +154,9 @@ func TestVoteAndUnvote(t *testing.T) {
 	voter = storedValue.Contract.NamedKeys.GetVotingDappFromUser(GENESIS_ADDRESS)
 
 	assert.Equal(t, 1, len(voter))
-	assert.Equal(t, "100", voter[ADDRESS1_HEX])
+	assert.Equal(t, "100", voter[ADDRESS1_DAPP_HEX])
 
-	voter = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(ADDRESS1)
+	voter = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(ADDRESS1_DAPP)
 	assert.Equal(t, "100", voter[GENESIS_ADDRESS_HEX])
 }
 
@@ -161,6 +164,12 @@ func TestVoteMoreAccount(t *testing.T) {
 	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT, DEFAULT_GENESIS_STATE_INFO)
 	address2 := util.DecodeHexString("03170a2e7597b7b7e3d84c05391d139a62b157e78786d8c082f29dcf4c111314")
 	address3 := util.DecodeHexString("f0f84944e0ccfa9e67383e6a448291787d208c8e46adc849f714078663d1dd36")
+
+	address2_dapp_hex := "0103170a2e7597b7b7e3d84c05391d139a62b157e78786d8c082f29dcf4c111314"
+	address3_dapp_hex := "01f0f84944e0ccfa9e67383e6a448291787d208c8e46adc849f714078663d1dd36"
+	address2_dapp := util.DecodeHexString("0103170a2e7597b7b7e3d84c05391d139a62b157e78786d8c082f29dcf4c111314")
+	address3_dapp := util.DecodeHexString("01f0f84944e0ccfa9e67383e6a448291787d208c8e46adc849f714078663d1dd36")
+
 	amount1 := "100"
 	amount2 := "200"
 	amount3 := "300"
@@ -173,17 +182,17 @@ func TestVoteMoreAccount(t *testing.T) {
 	values := storedValue.Contract.NamedKeys.GetVotingDappFromUser(GENESIS_ADDRESS)
 
 	assert.Equal(t, 3, len(values))
-	assert.Equal(t, "100", values[ADDRESS1_HEX])
-	assert.Equal(t, "200", values[hex.EncodeToString(address2)])
-	assert.Equal(t, "300", values[hex.EncodeToString(address3)])
+	assert.Equal(t, "100", values[ADDRESS1_DAPP_HEX])
+	assert.Equal(t, "200", values[address2_dapp_hex])
+	assert.Equal(t, "300", values[address3_dapp_hex])
 
-	values = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(ADDRESS1)
+	values = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(ADDRESS1_DAPP)
 	assert.Equal(t, "100", values[GENESIS_ADDRESS_HEX])
 
-	values = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(address2)
+	values = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(address2_dapp)
 	assert.Equal(t, "200", values[GENESIS_ADDRESS_HEX])
 
-	values = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(address3)
+	values = storedValue.Contract.NamedKeys.GetVotingUserFromDapp(address3_dapp)
 	assert.Equal(t, "300", values[GENESIS_ADDRESS_HEX])
 }
 
@@ -300,7 +309,7 @@ func TestImport(t *testing.T) {
 		"d_" + GENESIS_ADDRESS_HEX + "_" + GENESIS_ADDRESS_HEX + "_" + INITIAL_BOND_AMOUNT,
 		"d_" + GENESIS_ADDRESS_HEX + "_" + ADDRESS1_HEX + "_" + DELEAGE_AMOUNT_ADDRESS1_FROM_GENESIS_ADDR,
 		"d_" + ADDRESS1_HEX + "_" + ADDRESS1_HEX + "_" + SELF_DELEAGE_AMOUNT_FROM_ADDRESS1,
-		"a_" + GENESIS_ADDRESS_HEX + "_" + GENESIS_ADDRESS_HEX + "_" + VOTE_AMOUNT_FROM_GENESIS_ADDR,
+		"a_" + GENESIS_ADDRESS_HEX + "_" + DAPP_HASH_HEX + "_" + VOTE_AMOUNT_FROM_GENESIS_ADDR,
 		"r_" + GENESIS_ADDRESS_HEX + "_" + REWARD_FROM_GENESIS_ADDR,
 		"c_" + GENESIS_ADDRESS_HEX + "_" + COMMISSION_FROM_GENSIS_ADDR,
 	}
@@ -318,8 +327,20 @@ func TestImport(t *testing.T) {
 	assert.Equal(t, SELF_DELEAGE_AMOUNT_FROM_ADDRESS1, address1DelegateInfo[ADDRESS1_HEX])
 
 	genesisAddressVoteInfo := storedValue.Contract.NamedKeys.GetVotingDappFromUser(GENESIS_ADDRESS)
-	assert.Equal(t, VOTE_AMOUNT_FROM_GENESIS_ADDR, genesisAddressVoteInfo[GENESIS_ADDRESS_HEX])
+	assert.Equal(t, VOTE_AMOUNT_FROM_GENESIS_ADDR, genesisAddressVoteInfo[DAPP_HASH_HEX])
 
 	assert.Equal(t, REWARD_FROM_GENESIS_ADDR, storedValue.Contract.NamedKeys.GetUserReward(GENESIS_ADDRESS))
 	assert.Equal(t, COMMISSION_FROM_GENSIS_ADDR, storedValue.Contract.NamedKeys.GetValidatorCommission(GENESIS_ADDRESS))
+}
+
+func TestStandardPayment(t *testing.T) {
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT, DEFAULT_GENESIS_STATE_INFO)
+
+	paymentStr := GetPaymentArgsJson("1000000000000000000")
+
+	rootStateHash, _ = RunExecute(client, rootStateHash, GENESIS_ADDRESS, util.HASH, proxyHash, paymentStr, proxyHash, "1000000000000000000", protocolVersion)
+
+	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "3000000000000000000", queryResult)
+	assert.Equal(t, "", errMessage)
 }

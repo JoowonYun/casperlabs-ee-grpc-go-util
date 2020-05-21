@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -20,15 +21,20 @@ const (
 
 	GENESIS_ADDRESS_HEX = "d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
 	ADDRESS1_HEX        = "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
+	ADDRESS1_DAPP_HEX   = "0193236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
 
 	INITIAL_BALANCE     = "5000000000000000000"
 	INITIAL_BOND_AMOUNT = "1000000000000000000"
+
+	DAPP_HASH_HEX = "01d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
 )
 
 var (
 	SYSTEM_ACCOUNT  = make([]byte, 32)
 	GENESIS_ADDRESS = util.DecodeHexString(GENESIS_ADDRESS_HEX)
 	ADDRESS1        = util.DecodeHexString(ADDRESS1_HEX)
+	ADDRESS1_DAPP   = util.DecodeHexString(ADDRESS1_DAPP_HEX)
+	DAPP_HASH       = util.DecodeHexString(DAPP_HASH_HEX)
 
 	DEFAULT_GENESIS_ACCOUNT = []*ipc.ChainSpec_GenesisAccount{{
 		PublicKey:    GENESIS_ADDRESS,
@@ -420,21 +426,26 @@ func RunUnvote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAdd
 
 func RunStep(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
 	proxyHash []byte, protocolVersion *state.ProtocolVersion) (resultStateHash []byte, bonds []*ipc.Bond) {
-	sessionArgs := []*consensus.Deploy_Arg{
-		&consensus.Deploy_Arg{
-			Name: "method",
-			Value: &state.CLValueInstance{
-				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_STRING}},
-				Value: &state.CLValueInstance_Value{
-					Value: &state.CLValueInstance_Value_StrValue{
-						StrValue: "step"}}}}}
 
-	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
+	res, err := client.Step(
+		context.TODO(),
+		&ipc.StepRequest{
+			ParentStateHash: stateHash,
+			BlockTime:       uint64(time.Now().Unix()),
+			ProtocolVersion: protocolVersion,
+		},
+	)
 	if err != nil {
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	stateHash, bonds, errMessage := grpc.Commit(client, res.GetSuccess().GetPostStateHash(), res.GetSuccess().GetEffect().TransformMap, protocolVersion)
+	if errMessage != "" {
+		panic(errMessage)
+	}
+	printCommitResult(stateHash, bonds)
+
+	return stateHash, bonds
 }
 
 func RunClaimCommission(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
