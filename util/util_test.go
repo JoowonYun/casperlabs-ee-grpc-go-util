@@ -55,3 +55,90 @@ func TestJsonStringToDeployArgs(t *testing.T) {
 	assert.Equal(t, args[1].GetName(), args2[1].GetName())
 	assert.Equal(t, args[1].GetValue().GetValue().GetI32(), args2[1].GetValue().GetValue().GetI32())
 }
+
+func TestJson(t *testing.T) {
+	js := `[
+		{
+		   "name":"method",
+		   "value":{
+			  "cl_type":{
+				 "simple_type":"STRING"
+			  },
+			  "value":{
+				 "str_value":"get_token"
+			  }
+		   }
+		},
+		{
+		   "name":"ver1_pubkey",
+		   "value":{
+			  "cl_type":{
+				 "list_type":{
+					"inner":{
+					   "simple_type":"STRING"
+					}
+				 }
+			  },
+			  "value":{
+				 "list_value":{
+					"values":[
+					   {
+						  "str_value":"02c4ef70543e18889167ca67c8aa28c1d4c259e89cb34483a8ed6cfd3a03e8246b"
+					   }
+					]
+				 }
+			  }
+		   }
+		},
+		{
+		   "name":"message",
+		   "value":{
+			  "cl_type":{
+				 "list_type":{
+					"inner":{
+					   "simple_type":"STRING"
+					}
+				 }
+			  },
+			  "value":{
+				 "list_value":{
+					"values":[
+					   {
+						  "str_value":"69046d44e3d75d48436377626372a44a5066966b5d72c00b67769c1cc6a8619a"
+					   }
+					]
+				 }
+			  }
+		   }
+		},
+		{
+		   "name":"signature",
+		   "value":{
+			  "cl_type":{
+				 "list_type":{
+					"inner":{
+					   "simple_type":"STRING"
+					}
+				 }
+			  },
+			  "value":{
+				 "list_value":{
+					"values":[
+					   {
+						  "str_value":"24899366fd3d5dfe6740df1e5f467a53f1a3aaafce26d8df1497a925c55b5c266339a95fe6507bd611b0e3b6e74e3bb7f19eeb1165615e5cebe7f40e5765bc41"
+					   }
+					]
+				 }
+			  }
+		   }
+		}
+	 ]`
+
+	deployArgs, err := JsonStringToDeployArgs(js)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "get_token", deployArgs[0].GetValue().GetValue().GetStrValue())
+	assert.Equal(t, "02c4ef70543e18889167ca67c8aa28c1d4c259e89cb34483a8ed6cfd3a03e8246b", deployArgs[1].GetValue().GetValue().GetListValue().GetValues()[0].GetStrValue())
+	assert.Equal(t, "69046d44e3d75d48436377626372a44a5066966b5d72c00b67769c1cc6a8619a", deployArgs[2].GetValue().GetValue().GetListValue().GetValues()[0].GetStrValue())
+	assert.Equal(t, "24899366fd3d5dfe6740df1e5f467a53f1a3aaafce26d8df1497a925c55b5c266339a95fe6507bd611b0e3b6e74e3bb7f19eeb1165615e5cebe7f40e5765bc41", deployArgs[3].GetValue().GetValue().GetListValue().GetValues()[0].GetStrValue())
+}
