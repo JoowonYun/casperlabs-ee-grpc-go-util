@@ -3,6 +3,7 @@ package grpc
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/protobuf/io/casperlabs/casper/consensus/state"
@@ -13,6 +14,24 @@ import (
 	"github.com/hdac-io/casperlabs-ee-grpc-go-util/util"
 
 	"google.golang.org/grpc"
+)
+
+const (
+	STR_MINT = "mint"
+	STR_POS  = "pos"
+
+	STR_ADDRESS = "address"
+	STR_UREF    = "uref"
+	STR_HASH    = "hash"
+	STR_LOCAL   = "local"
+
+	ACTION_PREFIX_STAKE  = 1
+	ACTION_PREFIX_VOTING = 2
+	ACTION_PREFIX_VOTED  = 3
+)
+
+var (
+	SYSTEM_ACCOUNT = make([]byte, 32)
 )
 
 // Connect 은 Casperlabs의 Execution Engine의 unix socket으로 연결하는 함수.
@@ -104,13 +123,13 @@ func Query(client ipc.ExecutionEngineServiceClient,
 
 	var key *state.Key
 	switch keyType {
-	case "address":
+	case STR_ADDRESS:
 		key = &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: keyData}}}
-	case "local":
+	case STR_LOCAL:
 		key = &state.Key{Value: &state.Key_Local_{Local: &state.Key_Local{Hash: keyData}}}
-	case "uref":
+	case STR_UREF:
 		key = &state.Key{Value: &state.Key_Uref{Uref: &state.Key_URef{Uref: keyData}}}
-	case "hash":
+	case STR_HASH:
 		key = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: keyData}}}
 	}
 
@@ -219,7 +238,7 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	address []byte,
 	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
 
-	res, errMessage := Query(client, stateHash, "address", address, []string{}, protocolVersion)
+	res, errMessage := Query(client, stateHash, STR_ADDRESS, address, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
@@ -233,16 +252,15 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	purseID := account.MainPurse.GetAddress()
 	var mintUref []byte
 	for _, namedKey := range account.NamedKeys {
-		if namedKey.Name == "mint" {
+		if namedKey.Name == STR_MINT {
 			mintUref = namedKey.Key.Uref.Address
 			break
 		}
 	}
 
-	hashPurseId := util.Blake2b256(purseID)
-	localBytes := append(mintUref, hashPurseId...)
+	localBytes := util.MakeLocalKey(mintUref, purseID)
 
-	res, errMessage = Query(client, stateHash, "local", localBytes, []string{}, protocolVersion)
+	res, errMessage = Query(client, stateHash, STR_LOCAL, localBytes, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
@@ -253,12 +271,152 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	}
 	uref := storedValue.ClValue.ToStateValues().GetKey().GetUref().GetUref()
 
-	res, errMessage = Query(client, stateHash, "uref", uref, []string{}, protocolVersion)
+	res, errMessage = Query(client, stateHash, STR_UREF, uref, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}
 
 	storedValue, err, _ = storedValue.FromBytes(res)
+	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
+
+	return balance, errMessage
+}
+
+func QueryStake(client ipc.ExecutionEngineServiceClient,
+	stateHash []byte,
+	address []byte,
+	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
+
+	res, errMessage := Query(client, stateHash, STR_ADDRESS, SYSTEM_ACCOUNT, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	var storedValue storedvalue.StoredValue
+	storedValue, err, _ := storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	account := storedValue.Account
+	var popUref []byte
+	for _, namedKey := range account.NamedKeys {
+		if namedKey.Name == STR_POS {
+			popUref = namedKey.Key.Uref.Address
+			break
+		}
+	}
+
+	localBytes := append([]byte{ACTION_PREFIX_STAKE}, address...)
+	localRes := make([]byte, storedvalue.SIZE_LENGTH)
+	binary.LittleEndian.PutUint32(localRes, uint32(len(localBytes)))
+	localRes = append(localRes, localBytes...)
+
+	local := util.MakeLocalKey(popUref, localRes)
+
+	res, errMessage = Query(client, stateHash, STR_LOCAL, local, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	storedValue, err, _ = storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+
+	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
+
+	return balance, errMessage
+}
+
+// dapp
+func QueryVoted(client ipc.ExecutionEngineServiceClient,
+	stateHash []byte,
+	address []byte,
+	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
+
+	res, errMessage := Query(client, stateHash, STR_ADDRESS, SYSTEM_ACCOUNT, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	var storedValue storedvalue.StoredValue
+	storedValue, err, _ := storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	account := storedValue.Account
+	var popUref []byte
+	for _, namedKey := range account.NamedKeys {
+		if namedKey.Name == STR_POS {
+			popUref = namedKey.Key.Uref.Address
+			break
+		}
+	}
+
+	localBytes := append([]byte{ACTION_PREFIX_VOTED}, address...)
+	localRes := make([]byte, storedvalue.SIZE_LENGTH)
+	binary.LittleEndian.PutUint32(localRes, uint32(len(localBytes)))
+	localRes = append(localRes, localBytes...)
+
+	local := util.MakeLocalKey(popUref, localRes)
+
+	res, errMessage = Query(client, stateHash, STR_LOCAL, local, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	storedValue, err, _ = storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+
+	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
+
+	return balance, errMessage
+}
+
+// voter
+func QueryVoting(client ipc.ExecutionEngineServiceClient,
+	stateHash []byte,
+	address []byte,
+	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
+
+	res, errMessage := Query(client, stateHash, STR_ADDRESS, SYSTEM_ACCOUNT, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	var storedValue storedvalue.StoredValue
+	storedValue, err, _ := storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	account := storedValue.Account
+	var popUref []byte
+	for _, namedKey := range account.NamedKeys {
+		if namedKey.Name == STR_POS {
+			popUref = namedKey.Key.Uref.Address
+			break
+		}
+	}
+
+	localBytes := append([]byte{ACTION_PREFIX_VOTING}, address...)
+	localRes := make([]byte, storedvalue.SIZE_LENGTH)
+	binary.LittleEndian.PutUint32(localRes, uint32(len(localBytes)))
+	localRes = append(localRes, localBytes...)
+
+	local := util.MakeLocalKey(popUref, localRes)
+
+	res, errMessage = Query(client, stateHash, STR_LOCAL, local, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	storedValue, err, _ = storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+
 	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
 
 	return balance, errMessage

@@ -238,7 +238,7 @@ func AddDeploy(deploys []*ipc.DeployItem, deploy *ipc.DeployItem) []*ipc.DeployI
 }
 
 func GenesisConfigMock(
-	chainName string, genesisAccount []*ipc.ChainSpec_GenesisAccount, stateInfo []string, protocolVersion *state.ProtocolVersion,
+	chainName string, genesisAccount []*ipc.ChainSpec_GenesisAccount, protocolVersion *state.ProtocolVersion,
 	mapCosts map[string]uint32, mintInstallWasmPath string, posInstallWasmPath string, standardPaymentInstallWasmPath string) (
 	*ipc.ChainSpec_GenesisConfig, error) {
 	genesisConfig := ipc.ChainSpec_GenesisConfig{}
@@ -254,8 +254,6 @@ func GenesisConfigMock(
 
 	// GenesisAccount
 	genesisConfig.Accounts = genesisAccount
-
-	genesisConfig.StateInfos = stateInfo
 
 	// CostTable
 	genesisConfig.Costs = &ipc.ChainSpec_CostTable{
@@ -289,4 +287,9 @@ func GenesisConfigMock(
 	}
 
 	return &genesisConfig, nil
+}
+
+func MakeLocalKey(seed []byte, keyBytes []byte) []byte {
+	hash := Blake2b256(keyBytes)
+	return append(seed, hash...)
 }
