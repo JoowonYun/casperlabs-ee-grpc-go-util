@@ -40,8 +40,6 @@ var (
 		PublicKey:    GENESIS_ADDRESS,
 		Balance:      &state.BigInt{Value: INITIAL_BALANCE, BitWidth: 512},
 		BondedAmount: &state.BigInt{Value: INITIAL_BOND_AMOUNT, BitWidth: 512}}}
-	DEFAULT_GENESIS_STATE_INFO = []string{
-		"d_" + GENESIS_ADDRESS_HEX + "_" + GENESIS_ADDRESS_HEX + "_" + INITIAL_BOND_AMOUNT}
 )
 
 func GetPaymentArgsJson(fee string) string {
@@ -69,7 +67,7 @@ func GetPaymentArgsJson(fee string) string {
 	return paymentArgsStr
 }
 
-func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount, stateInfos []string) (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
+func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount) (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
@@ -95,7 +93,7 @@ func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount, stateInf
 	// run genesis
 	println(`RunGenesis`)
 	genesisConfig, err := util.GenesisConfigMock(
-		CHAIN_NAME, genesisAccounts, stateInfos, protocolVersion, costs,
+		CHAIN_NAME, genesisAccounts, protocolVersion, costs,
 		"./contracts/hdac_mint_install.wasm", "./contracts/pop_install.wasm", "./contracts/standard_payment_install.wasm")
 	if err != nil {
 		panic(err)
@@ -338,11 +336,14 @@ func RunRedelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, ru
 		&consensus.Deploy_Arg{
 			Name: "amount",
 			Value: &state.CLValueInstance{
-				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
+				ClType: &state.CLType{Variants: &state.CLType_OptionType{OptionType: &state.CLType_Option{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}}}}},
 				Value: &state.CLValueInstance_Value{
-					Value: &state.CLValueInstance_Value_U512{
-						U512: &state.CLValueInstance_U512{
-							Value: amount}}}}}}
+					Value: &state.CLValueInstance_Value_OptionValue{
+						OptionValue: &state.CLValueInstance_Option{
+							Value: &state.CLValueInstance_Value{
+								Value: &state.CLValueInstance_Value_U512{
+									U512: &state.CLValueInstance_U512{
+										Value: amount}}}}}}}}}
 	sessionArgsStr, err := util.DeployArgsToJsonString(sessionArgs)
 	if err != nil {
 		panic(err)
