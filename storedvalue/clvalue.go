@@ -174,7 +174,6 @@ func (c CLValue) ToStateValues() *state.Value {
 		value = &state.Value{Value: &state.Value_BigInt{BigInt: &state.BigInt{Value: fromByteToBigInt(c.Bytes).String(), BitWidth: 256}}}
 	case TAG_U512:
 		value = &state.Value{Value: &state.Value_BigInt{BigInt: &state.BigInt{Value: fromByteToBigInt(c.Bytes).String(), BitWidth: 512}}}
-	case TAG_UNIT:
 	case TAG_STRING:
 		value = &state.Value{Value: &state.Value_StringValue{StringValue: string(c.Bytes)}}
 	case TAG_KEY:
@@ -185,13 +184,41 @@ func (c CLValue) ToStateValues() *state.Value {
 		var uref URef
 		uref, _, _ = uref.FromBytes(c.Bytes)
 		value = &state.Value{Value: &state.Value_Key{Key: &state.Key{Value: &state.Key_Uref{Uref: uref.ToStateValue()}}}}
-	case TAG_OPTION:
-
 	case TAG_LIST:
+		length := int(binary.LittleEndian.Uint32(c.Bytes[:SIZE_LENGTH]))
+		pos := length
+		switch c.Tags[TAG_LENGTH] {
+		case TAG_I32, TAG_U32:
+			var values []int32
+			for i := 0; i < length; i++ {
+				val := int32(binary.LittleEndian.Uint32(c.Bytes[pos : pos+INT32_LENGTH]))
+				values = append(values, val)
+				pos += INT32_LENGTH
+			}
 
+			value = &state.Value{Value: &state.Value_IntList{
+				IntList: &state.IntList{Values: values},
+			}}
+		case TAG_STRING:
+			var values []string
+			for i := 0; i < length; i++ {
+				strLength := binary.LittleEndian.Uint32(c.Bytes[pos : pos+SIZE_LENGTH])
+				pos += SIZE_LENGTH
+				values = append(values, string(c.Bytes[pos:strLength]))
+				pos += int(strLength)
+			}
+
+			value = &state.Value{Value: &state.Value_StringList{
+				StringList: &state.StringList{Values: values},
+			}}
+		}
 	case TAG_FIXED_LIST:
 		value = &state.Value{Value: &state.Value_BytesValue{BytesValue: c.Bytes}}
 	// TODO
+	case TAG_UNIT:
+
+	case TAG_OPTION:
+
 	case TAG_RESULT:
 
 	case TAG_MAP:
@@ -362,7 +389,6 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		res := []byte{byte(len(bytes))}
 		c.Tags = []CL_TYPE_TAG{TAG_U512}
 		c.Bytes = append(res, bytes...)
-	case *state.CLValueInstance_Value_Unit:
 	case *state.CLValueInstance_Value_StrValue:
 		res := make([]byte, SIZE_LENGTH)
 		binary.LittleEndian.PutUint32(res, uint32(len(value.GetStrValue())))
@@ -386,7 +412,6 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		c.Bytes = uref.ToBytes()
 		c.Tags = []CL_TYPE_TAG{TAG_UREF}
 	case *state.CLValueInstance_Value_OptionValue:
-
 		clValue, err := c.FromDeployArgValue(value.GetOptionValue().GetValue())
 		if err != nil {
 			return CLValue{}, err
@@ -399,11 +424,61 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		}
 		c.Bytes = res
 		c.Tags = append([]CL_TYPE_TAG{TAG_OPTION}, clValue.Tags...)
-	// TODO
 	case *state.CLValueInstance_Value_ListValue:
+		c.Tags = []CL_TYPE_TAG{TAG_LIST}
+		res := make([]byte, SIZE_LENGTH)
+		binary.LittleEndian.PutUint32(res, uint32(len(value.GetListValue().GetValues())))
+		for idx, val := range value.GetListValue().GetValues() {
+			clValue, err := c.FromDeployArgValue(val)
+			if err != nil {
+				return CLValue{}, err
+			}
+
+			c.Bytes = append(res, clValue.Bytes...)
+			if idx == 0 {
+				c.Tags = append(c.Tags, clValue.Tags...)
+			}
+		}
 	case *state.CLValueInstance_Value_FixedListValue:
-	case *state.CLValueInstance_Value_ResultValue:
+		c.Tags = []CL_TYPE_TAG{TAG_FIXED_LIST}
+		res := make([]byte, SIZE_LENGTH)
+		binary.LittleEndian.PutUint32(res, uint32(len(value.GetListValue().GetValues())))
+		for idx, val := range value.GetFixedListValue().GetValues() {
+			clValue, err := c.FromDeployArgValue(val)
+			if err != nil {
+				return CLValue{}, err
+			}
+
+			c.Bytes = append(res, clValue.Bytes...)
+			if idx == 0 {
+				c.Tags = append(c.Tags, clValue.Tags...)
+			}
+		}
 	case *state.CLValueInstance_Value_MapValue:
+		c.Tags = []CL_TYPE_TAG{TAG_MAP}
+		res := make([]byte, SIZE_LENGTH)
+		binary.LittleEndian.PutUint32(res, uint32(len(value.GetMapValue().GetValues())))
+		for idx, val := range value.GetMapValue().GetValues() {
+			clValueKey, err := c.FromDeployArgValue(val.GetKey())
+			if err != nil {
+				return CLValue{}, err
+			}
+			c.Bytes = append(res, clValueKey.Bytes...)
+
+			clValueValue, err := c.FromDeployArgValue(val.GetValue())
+			if err != nil {
+				return CLValue{}, err
+			}
+			c.Bytes = append(res, clValueValue.Bytes...)
+
+			if idx == 0 {
+				c.Tags = append(c.Tags, clValueKey.Tags...)
+				c.Tags = append(c.Tags, clValueValue.Tags...)
+			}
+		}
+	// TODO
+	case *state.CLValueInstance_Value_Unit:
+	case *state.CLValueInstance_Value_ResultValue:
 	case *state.CLValueInstance_Value_Tuple1Value:
 	case *state.CLValueInstance_Value_Tuple2Value:
 	case *state.CLValueInstance_Value_Tuple3Value:
