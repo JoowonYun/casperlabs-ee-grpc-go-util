@@ -28,6 +28,9 @@ const (
 	ACTION_PREFIX_STAKE  = 1
 	ACTION_PREFIX_VOTING = 2
 	ACTION_PREFIX_VOTED  = 3
+
+	PREFIX_COMMISSION = 32
+	PREFIX_REWARD = 33
 )
 
 var (
@@ -233,6 +236,8 @@ func Upgrade(client ipc.ExecutionEngineServiceClient,
 // name key에서 name이 mint인 uref를 추출하여 hex string로 변환하고 purse Id를 abi로 변환한 후 hex string으로 변환하여 붙인다.
 // 해당 값을 blake2b256을 하면 local bytes 값이 추출된다. 이 값을 key를 local로 하여 Query한다.
 // 받아온 uref값을 Key로 하여 Query하면 BigInt 형태의 blanace를 return 해준다.
+//
+// TODO we might be able to merge query balance-like functions.
 func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	stateHash []byte,
 	address []byte,
@@ -277,6 +282,98 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	}
 
 	storedValue, err, _ = storedValue.FromBytes(res)
+	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
+
+	return balance, errMessage
+}
+
+func QueryCommission(client ipc.ExecutionEngineServiceClient,
+	stateHash []byte,
+	address []byte,
+	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
+
+	res, errMessage := Query(client, stateHash, STR_ADDRESS, SYSTEM_ACCOUNT, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	var storedValue storedvalue.StoredValue
+	storedValue, err, _ := storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	account := storedValue.Account
+	var popUref []byte
+	for _, namedKey := range account.NamedKeys {
+		if namedKey.Name == STR_POS {
+			popUref = namedKey.Key.Uref.Address
+			break
+		}
+	}
+
+	localBytes := append([]byte{PREFIX_COMMISSION}, address...)
+	localRes := make([]byte, storedvalue.SIZE_LENGTH)
+	binary.LittleEndian.PutUint32(localRes, uint32(len(localBytes)))
+	localRes = append(localRes, localBytes...)
+
+	local := util.MakeLocalKey(popUref, localRes)
+
+	res, errMessage = Query(client, stateHash, STR_LOCAL, local, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	storedValue, err, _ = storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+
+	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
+
+	return balance, errMessage
+}
+
+func QueryReward(client ipc.ExecutionEngineServiceClient,
+	stateHash []byte,
+	address []byte,
+	protocolVersion *state.ProtocolVersion) (balance string, errMessage string) {
+
+	res, errMessage := Query(client, stateHash, STR_ADDRESS, SYSTEM_ACCOUNT, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	var storedValue storedvalue.StoredValue
+	storedValue, err, _ := storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+	account := storedValue.Account
+	var popUref []byte
+	for _, namedKey := range account.NamedKeys {
+		if namedKey.Name == STR_POS {
+			popUref = namedKey.Key.Uref.Address
+			break
+		}
+	}
+
+	localBytes := append([]byte{PREFIX_REWARD}, address...)
+	localRes := make([]byte, storedvalue.SIZE_LENGTH)
+	binary.LittleEndian.PutUint32(localRes, uint32(len(localBytes)))
+	localRes = append(localRes, localBytes...)
+
+	local := util.MakeLocalKey(popUref, localRes)
+
+	res, errMessage = Query(client, stateHash, STR_LOCAL, local, []string{}, protocolVersion)
+	if errMessage != "" {
+		return balance, errMessage
+	}
+
+	storedValue, err, _ = storedValue.FromBytes(res)
+	if err != nil {
+		return balance, err.Error()
+	}
+
 	balance = storedValue.ClValue.ToStateValues().GetBigInt().GetValue()
 
 	return balance, errMessage
