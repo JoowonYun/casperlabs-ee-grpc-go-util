@@ -23,8 +23,10 @@ const (
 	ADDRESS1_HEX        = "93236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
 	ADDRESS1_DAPP_HEX   = "0193236a9263d2ac6198c5ed211774c745d5dc62a910cb84276f8a7c4959208915"
 
-	INITIAL_BALANCE     = "5000000000000000000"
+	INITIAL_BALANCE     = "50000000000000000000000"
 	INITIAL_BOND_AMOUNT = "1000000000000000000"
+
+	BASIC_FEE = "100000000000000000"
 
 	DAPP_HASH_HEX = "01d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
 )
@@ -133,13 +135,13 @@ func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount) (ipc.Exe
 func RunCounterDefine(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte, proxyHash []byte, protocolVersion *state.ProtocolVersion) (resultStateHash []byte, bonds []*ipc.Bond) {
 	counterDefineCode := util.LoadWasmFile("./contracts/counter_define.wasm")
 
-	return RunExecute(client, stateHash, runAddress, util.WASM, counterDefineCode, "", proxyHash, "10000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.WASM, counterDefineCode, "", proxyHash, BASIC_FEE, protocolVersion)
 }
 
 func RunCounterCall(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte, proxyHash []byte, protocolVersion *state.ProtocolVersion) (resultStateHash []byte, bonds []*ipc.Bond) {
 	counterCallCode := util.LoadWasmFile("./contracts/counter_call.wasm")
 
-	return RunExecute(client, stateHash, runAddress, util.WASM, counterCallCode, "", proxyHash, "10000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.WASM, counterCallCode, "", proxyHash, BASIC_FEE, protocolVersion)
 }
 
 func RunTransferToAccount(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -173,7 +175,7 @@ func RunTransferToAccount(client ipc.ExecutionEngineServiceClient, stateHash []b
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "10000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, BASIC_FEE, protocolVersion)
 }
 
 func RunBond(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -201,7 +203,7 @@ func RunBond(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddre
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "10000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, BASIC_FEE, protocolVersion)
 }
 
 func RunUnbond(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -232,7 +234,7 @@ func RunUnbond(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAdd
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "10000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, BASIC_FEE, protocolVersion)
 }
 
 func RunDelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,

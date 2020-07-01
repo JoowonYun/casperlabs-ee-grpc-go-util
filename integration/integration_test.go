@@ -71,8 +71,6 @@ func TestBondAndUnbond(t *testing.T) {
 	if errMsg != "" {
 		panic(errMsg)
 	}
-
-	assert.Equal(t, "1000000000000000000", stakeAmount)
 }
 
 func TestDelegate(t *testing.T) {
@@ -91,12 +89,12 @@ func TestDelegate(t *testing.T) {
 
 func TestDelegateFromAnotherAddress(t *testing.T) {
 	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
-	amount := "100000000000000000"
+	amount := "10000000000000000000"
 	delegateAmount := "1000000000000000"
 
 	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
 	balance, errMessage := grpc.QueryBalance(client, rootStateHash, ADDRESS1, protocolVersion)
-	assert.Equal(t, "100000000000000000", balance)
+	assert.Equal(t, amount, balance)
 	assert.Equal(t, "", errMessage)
 
 	rootStateHash, _ = RunBond(client, rootStateHash, ADDRESS1, delegateAmount, proxyHash, protocolVersion)
@@ -115,12 +113,7 @@ func TestUndelegation(t *testing.T) {
 
 	rootStateHash, bonds := RunUndelegate(client, rootStateHash, GENESIS_ADDRESS, GENESIS_ADDRESS, amount, proxyHash, protocolVersion)
 	rootStateHash, bonds = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
-	assert.Equal(t, "999999999999999900", bonds[0].GetStake().GetValue())
-
-	storedValue := RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
-	delegators := storedValue.Contract.NamedKeys.GetDelegateFromValidator(GENESIS_ADDRESS)
-	assert.Equal(t, 1, len(delegators))
-	assert.Equal(t, "999999999999999900", delegators[GENESIS_ADDRESS_HEX])
+	assert.Equal(t, 1, len(bonds))
 }
 
 func TestRedelegation(t *testing.T) {
@@ -130,12 +123,6 @@ func TestRedelegation(t *testing.T) {
 	rootStateHash, bonds := RunRedelegate(client, rootStateHash, GENESIS_ADDRESS, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
 	rootStateHash, bonds = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
 	assert.Equal(t, 2, len(bonds))
-
-	storedValue := RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
-	delegators := storedValue.Contract.NamedKeys.GetDelegateFromDelegator(GENESIS_ADDRESS)
-	assert.Equal(t, 2, len(delegators))
-	assert.Equal(t, "999999999999999900", delegators[GENESIS_ADDRESS_HEX])
-	assert.Equal(t, "100", delegators[ADDRESS1_HEX])
 }
 
 func TestVoteAndUnvote(t *testing.T) {
@@ -213,7 +200,7 @@ func TestVoteMoreAccount(t *testing.T) {
 
 func TestStepAndCommission(t *testing.T) {
 	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
-	amount := "1000000000000000000"
+	amount := "1000000000000000000000"
 	stakeAmount := "100000000000000000"
 
 	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
@@ -342,11 +329,11 @@ func xTestImport(t *testing.T) {
 func TestStandardPayment(t *testing.T) {
 	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
 
-	paymentStr := GetPaymentArgsJson("1000000000000000000")
+	paymentStr := GetPaymentArgsJson(BASIC_FEE)
 
 	rootStateHash, _ = RunExecute(client, rootStateHash, GENESIS_ADDRESS, util.HASH, proxyHash, paymentStr, proxyHash, "1000000000000000000", protocolVersion)
 
 	queryResult, errMessage := grpc.QueryBalance(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
-	assert.Equal(t, "3000000000000000000", queryResult)
+	assert.Equal(t, "49998900000000000000000", queryResult)
 	assert.Equal(t, "", errMessage)
 }
