@@ -142,3 +142,47 @@ func TestJson(t *testing.T) {
 	assert.Equal(t, "69046d44e3d75d48436377626372a44a5066966b5d72c00b67769c1cc6a8619a", deployArgs[2].GetValue().GetValue().GetListValue().GetValues()[0].GetStrValue())
 	assert.Equal(t, "24899366fd3d5dfe6740df1e5f467a53f1a3aaafce26d8df1497a925c55b5c266339a95fe6507bd611b0e3b6e74e3bb7f19eeb1165615e5cebe7f40e5765bc41", deployArgs[3].GetValue().GetValue().GetListValue().GetValues()[0].GetStrValue())
 }
+
+func TestABC(t *testing.T) {
+	js := `[{
+		"name":"signature",
+		"value":{
+		   "cl_type":{
+			  "list_type":{
+				 "inner":{
+					"simple_type":"STRING"
+				 }
+			  }
+		   },
+		   "value":{
+			  "list_value":{
+				 "values":[
+					{
+					   "str_value":"123"
+					},
+					{
+					   "str_value":"456"
+					}
+				 ]
+			  }
+		   }
+		}
+	 }]`
+
+	deployArgs, err := JsonStringToDeployArgs(js)
+	assert.NoError(t, err)
+
+	abi, err := AbiDeployArgsTobytes(deployArgs)
+	assert.NoError(t, err)
+
+	assert.Equal(t, []byte{
+		1, 0, 0, 0,
+		18, 0, 0, 0,
+		2, 0, 0, 0,
+		3, 0, 0, 0,
+		49, 50, 51,
+		3, 0, 0, 0,
+		52, 53, 54,
+		14, 10,
+	}, abi)
+}

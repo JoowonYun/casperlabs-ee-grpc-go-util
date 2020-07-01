@@ -434,11 +434,12 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 				return CLValue{}, err
 			}
 
-			c.Bytes = append(res, clValue.Bytes...)
+			res = append(res, clValue.Bytes...)
 			if idx == 0 {
 				c.Tags = append(c.Tags, clValue.Tags...)
 			}
 		}
+		c.Bytes = res
 	case *state.CLValueInstance_Value_FixedListValue:
 		c.Tags = []CL_TYPE_TAG{TAG_FIXED_LIST}
 		res := make([]byte, SIZE_LENGTH)
@@ -449,11 +450,12 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 				return CLValue{}, err
 			}
 
-			c.Bytes = append(res, clValue.Bytes...)
+			res = append(res, clValue.Bytes...)
 			if idx == 0 {
 				c.Tags = append(c.Tags, clValue.Tags...)
 			}
 		}
+		c.Bytes = res
 	case *state.CLValueInstance_Value_MapValue:
 		c.Tags = []CL_TYPE_TAG{TAG_MAP}
 		res := make([]byte, SIZE_LENGTH)
