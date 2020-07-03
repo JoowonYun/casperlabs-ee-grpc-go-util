@@ -211,6 +211,8 @@ func (c CLValue) ToStateValues() *state.Value {
 			value = &state.Value{Value: &state.Value_StringList{
 				StringList: &state.StringList{Values: values},
 			}}
+		case TAG_U8:
+			value = &state.Value{Value: &state.Value_BytesValue{BytesValue: c.Bytes}}
 		}
 	case TAG_FIXED_LIST:
 		value = &state.Value{Value: &state.Value_BytesValue{BytesValue: c.Bytes}}
