@@ -27,6 +27,7 @@ const (
 	INITIAL_BOND_AMOUNT = "1000000000000000000"
 
 	BASIC_FEE = "100000000000000000"
+	ADVANCED_FEE = "300000000000000000"
 
 	DAPP_HASH_HEX = "01d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
 )
@@ -269,7 +270,7 @@ func RunDelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, runA
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunUndelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -307,7 +308,7 @@ func RunUndelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, ru
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunRedelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -351,7 +352,7 @@ func RunRedelegate(client ipc.ExecutionEngineServiceClient, stateHash []byte, ru
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunVote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -386,7 +387,7 @@ func RunVote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddre
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunUnvote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -424,7 +425,7 @@ func RunUnvote(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAdd
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunStep(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -467,7 +468,7 @@ func RunClaimCommission(client ipc.ExecutionEngineServiceClient, stateHash []byt
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunClaimReward(client ipc.ExecutionEngineServiceClient, stateHash []byte, runAddress []byte,
@@ -486,7 +487,7 @@ func RunClaimReward(client ipc.ExecutionEngineServiceClient, stateHash []byte, r
 		panic(err)
 	}
 
-	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, "30000000000000000", protocolVersion)
+	return RunExecute(client, stateHash, runAddress, util.HASH, proxyHash, sessionArgsStr, proxyHash, ADVANCED_FEE, protocolVersion)
 }
 
 func RunExecute(client ipc.ExecutionEngineServiceClient, stateHash []byte,
