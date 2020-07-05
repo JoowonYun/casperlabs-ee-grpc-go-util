@@ -198,92 +198,71 @@ func TestVoteMoreAccount(t *testing.T) {
 	assert.Equal(t, "600", genensisVoteAmount)
 }
 
-func TestStepAndCommission(t *testing.T) {
+func TestStepAndClaim(t *testing.T) {
 	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
-	amount := "1000000000000000000000"
+	amount := "1000000000000000000"
 	stakeAmount := "100000000000000000"
 
+        // delegate from ADDRESS1 to GENESIS_ADDRESS
 	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
 	rootStateHash, _ = RunBond(client, rootStateHash, ADDRESS1, stakeAmount, proxyHash, protocolVersion)
 	rootStateHash, _ = RunDelegate(client, rootStateHash, ADDRESS1, GENESIS_ADDRESS, stakeAmount, proxyHash, protocolVersion)
-
 	beforeAddress1Amount, errMessage := grpc.QueryBalance(client, rootStateHash, ADDRESS1, protocolVersion)
 	assert.Equal(t, "", errMessage)
-
 	beforeGenesisAmount, errMessage := grpc.QueryBalance(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
 	assert.Equal(t, "", errMessage)
 
-	// step
-	rootStateHash, _ = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
-
+	// run step 10 times
+	for i := 0; i < 10; i++ {
+		rootStateHash, _ = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
+	}
 	afterStepAddress1Amount, errMessage := grpc.QueryBalance(client, rootStateHash, ADDRESS1, protocolVersion)
 	assert.Equal(t, "", errMessage)
 	assert.Equal(t, beforeAddress1Amount, afterStepAddress1Amount)
-
 	afterStepGenesisAmount, errMessage := grpc.QueryBalance(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "", errMessage)
 	assert.Equal(t, beforeGenesisAmount, afterStepGenesisAmount)
+
+        // check reward and commission is generated
+	step10Address1Reward, errMessage := grpc.QueryReward(client, rootStateHash, ADDRESS1, protocolVersion)
+	assert.Equal(t, "", errMessage)
+	assert.NotEqual(t, "", step10Address1Reward)
+	step10GenesisAddressReward, errMessage := grpc.QueryReward(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "", errMessage)
+	assert.NotEqual(t, "", step10GenesisAddressReward)
+	step10GenesisAddressCommission, errMessage := grpc.QueryCommission(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "", errMessage)
+	assert.NotEqual(t, "", step10GenesisAddressCommission)
 
 	// claim Commission
 	rootStateHash, _ = RunClaimCommission(client, rootStateHash, GENESIS_ADDRESS, proxyHash, protocolVersion)
-	rootStateHash, _ = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
-
 	afterClaimCommissionAddress1Amount, errMessage := grpc.QueryBalance(client, rootStateHash, ADDRESS1, protocolVersion)
 	assert.Equal(t, "", errMessage)
 	assert.Equal(t, beforeAddress1Amount, afterClaimCommissionAddress1Amount)
-
 	afterClaimCommissionGenesisAmount, errMessage := grpc.QueryBalance(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "", errMessage)
 	assert.NotEqual(t, beforeGenesisAmount, afterClaimCommissionGenesisAmount)
 
 	// claim Reward
 	rootStateHash, _ = RunClaimReward(client, rootStateHash, GENESIS_ADDRESS, proxyHash, protocolVersion)
 	rootStateHash, _ = RunClaimReward(client, rootStateHash, ADDRESS1, proxyHash, protocolVersion)
-	rootStateHash, _ = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
-
 	afterClaimRewardAddress1Amount, errMessage := grpc.QueryBalance(client, rootStateHash, ADDRESS1, protocolVersion)
 	assert.Equal(t, "", errMessage)
 	assert.NotEqual(t, afterClaimCommissionAddress1Amount, afterClaimRewardAddress1Amount)
-
 	afterClaimRewardGenesisAmount, errMessage := grpc.QueryBalance(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
 	assert.Equal(t, "", errMessage)
 	assert.NotEqual(t, afterClaimCommissionGenesisAmount, afterClaimRewardGenesisAmount)
-}
 
-func TestClaimAmount(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
-	amount := "1000000000000000000"
-	stakeAmount := "100000000000000000"
-
-	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
-	rootStateHash, _ = RunBond(client, rootStateHash, ADDRESS1, stakeAmount, proxyHash, protocolVersion)
-	rootStateHash, _ = RunDelegate(client, rootStateHash, ADDRESS1, GENESIS_ADDRESS, stakeAmount, proxyHash, protocolVersion)
-
-	// 10 step
-	for i := 0; i < 10; i++ {
-		rootStateHash, _ = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
-	}
-
-	storedValue := RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
-	step10Address1Reward := storedValue.Contract.NamedKeys.GetUserReward(ADDRESS1)
-	step10GenesisAddressReward := storedValue.Contract.NamedKeys.GetUserReward(GENESIS_ADDRESS)
-	step10GenesisAddressCommission := storedValue.Contract.NamedKeys.GetValidatorCommission(GENESIS_ADDRESS)
-
-	assert.NotEqual(t, "", step10Address1Reward)
-	assert.NotEqual(t, "", step10GenesisAddressReward)
-	assert.NotEqual(t, "", step10GenesisAddressCommission)
-
-	rootStateHash, _ = RunClaimCommission(client, rootStateHash, GENESIS_ADDRESS, proxyHash, protocolVersion)
-	rootStateHash, _ = RunClaimReward(client, rootStateHash, GENESIS_ADDRESS, proxyHash, protocolVersion)
-	rootStateHash, _ = RunClaimReward(client, rootStateHash, ADDRESS1, proxyHash, protocolVersion)
-	rootStateHash, _ = RunStep(client, rootStateHash, SYSTEM_ACCOUNT, proxyHash, protocolVersion)
-
-	storedValue = RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
-	stepAddress1Reward := storedValue.Contract.NamedKeys.GetUserReward(ADDRESS1)
-	stepGenesisAddressReward := storedValue.Contract.NamedKeys.GetUserReward(GENESIS_ADDRESS)
-	stepGenesisAddressCommission := storedValue.Contract.NamedKeys.GetValidatorCommission(GENESIS_ADDRESS)
-
-	assert.NotEqual(t, len(step10Address1Reward)+1, len(stepAddress1Reward))
-	assert.NotEqual(t, len(step10GenesisAddressReward)+1, len(stepGenesisAddressReward))
-	assert.NotEqual(t, len(step10GenesisAddressCommission)+1, len(stepGenesisAddressCommission))
+        // check reward and commission is claimed
+	afterClaimAddress1Reward, errMessage := grpc.QueryReward(client, rootStateHash, ADDRESS1, protocolVersion)
+	assert.Equal(t, "", errMessage)
+	assert.Equal(t, "", errMessage)
+	afterClaimGenesisAddressReward, errMessage := grpc.QueryReward(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "0", afterClaimAddress1Reward)
+	assert.Equal(t, "0", afterClaimGenesisAddressReward)
+	afterClaimGenesisAddressCommission, errMessage := grpc.QueryCommission(client, rootStateHash, GENESIS_ADDRESS, protocolVersion)
+	assert.Equal(t, "", errMessage)
+	assert.Equal(t, "0", afterClaimGenesisAddressCommission)
 }
 
 // Do net support import & export
