@@ -561,6 +561,13 @@ func (c CLValue) ToCLInstanceValue() (value *state.CLValueInstance_Value) {
 		value = uref.ToCLInstanceValue()
 	case TAG_LIST:
 		entrys := []*state.CLValueInstance_Value{}
+		if c.Tags[TAG_LENGTH] == TAG_U8 {
+			return &state.CLValueInstance_Value{
+				Value: &state.CLValueInstance_Value_BytesValue{
+					BytesValue: c.Bytes,
+				},
+			}
+		}
 		length := int(binary.LittleEndian.Uint32(c.Bytes[:SIZE_LENGTH]))
 		pos := length
 		for i := 0; i < length; i++ {
@@ -576,9 +583,15 @@ func (c CLValue) ToCLInstanceValue() (value *state.CLValueInstance_Value) {
 				},
 			},
 		}
-
 	case TAG_FIXED_LIST:
 		entrys := []*state.CLValueInstance_Value{}
+		if c.Tags[TAG_LENGTH] == TAG_U8 {
+			return &state.CLValueInstance_Value{
+				Value: &state.CLValueInstance_Value_BytesValue{
+					BytesValue: c.Bytes,
+				},
+			}
+		}
 		length := int(binary.LittleEndian.Uint32(c.Bytes[:SIZE_LENGTH]))
 		pos := length
 		for i := 0; i < length; i++ {
