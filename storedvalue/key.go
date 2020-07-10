@@ -153,6 +153,14 @@ func (k Key) FromStateValue(key *state.Key) (Key, error) {
 	return k, nil
 }
 
+func (k Key) ToCLInstanceValue() *state.CLValueInstance_Value {
+	return &state.CLValueInstance_Value{
+		Value: &state.CLValueInstance_Value_Key{
+			Key: k.ToStateValue(),
+		},
+	}
+}
+
 type NamedKey struct {
 	Name string `json:"name"`
 	Key  Key    `json:"key"`
@@ -209,7 +217,49 @@ func (n NamedKey) FromStateValue(state *state.NamedKey) (NamedKey, error) {
 	return NewNamedKey(state.GetName(), key), nil
 }
 
+func (n NamedKey) ToCLInstanceValue() *state.CLValueInstance_Value {
+	return &state.CLValueInstance_Value{
+		Value: &state.CLValueInstance_Value_MapValue{
+			MapValue: &state.CLValueInstance_Map{
+				Values: []*state.CLValueInstance_MapEntry{
+					&state.CLValueInstance_MapEntry{
+						Key: &state.CLValueInstance_Value{
+							Value: &state.CLValueInstance_Value_StrValue{
+								StrValue: n.Name,
+							},
+						},
+						Value: n.Key.ToCLInstanceValue(),
+					},
+				},
+			},
+		},
+	}
+}
+
 type NamedKeys []NamedKey
+
+func (ns NamedKeys) ToCLInstanceValue() *state.CLValueInstance_Value {
+	mapEntrys := []*state.CLValueInstance_MapEntry{}
+	for _, n := range ns {
+		mapEntry := &state.CLValueInstance_MapEntry{
+			Key: &state.CLValueInstance_Value{
+				Value: &state.CLValueInstance_Value_StrValue{
+					StrValue: n.Name,
+				},
+			},
+			Value: n.Key.ToCLInstanceValue(),
+		}
+		mapEntrys = append(mapEntrys, mapEntry)
+	}
+
+	return &state.CLValueInstance_Value{
+		Value: &state.CLValueInstance_Value_MapValue{
+			MapValue: &state.CLValueInstance_Map{
+				Values: mapEntrys,
+			},
+		},
+	}
+}
 
 const (
 	VALIDATOR_PREFIX_POS = iota

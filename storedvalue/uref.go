@@ -59,3 +59,11 @@ func (u URef) ToStateValue() *state.Key_URef {
 func (u URef) FromStateValue(uref *state.Key_URef) (URef, error) {
 	return NewURef(uref.GetUref(), u.AccessRights), nil
 }
+
+func (u URef) ToCLInstanceValue() *state.CLValueInstance_Value {
+	return &state.CLValueInstance_Value{
+		Value: &state.CLValueInstance_Value_Uref{
+			Uref: u.ToStateValue(),
+		},
+	}
+}

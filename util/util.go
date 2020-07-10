@@ -67,7 +67,7 @@ func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 
 	for _, deployArg := range src {
 		var clValue storedvalue.CLValue
-		clValue, err := clValue.FromDeployArgValue(deployArg.GetValue().GetValue())
+		clValue, err := clValue.FromCLValueInstanceValue(deployArg.GetValue().GetValue())
 		if err != nil {
 			return nil, err
 		}

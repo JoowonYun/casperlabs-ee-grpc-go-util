@@ -158,7 +158,6 @@ func (c CLValue) ToBytes() []byte {
 func (c CLValue) ToStateValues() *state.Value {
 	value := &state.Value{}
 	switch c.Tags[TAG_INDEX] {
-	case TAG_BOOL:
 	case TAG_I32:
 		value = &state.Value{Value: &state.Value_IntValue{IntValue: int32(binary.LittleEndian.Uint32(c.Bytes))}}
 	case TAG_I64:
@@ -216,23 +215,6 @@ func (c CLValue) ToStateValues() *state.Value {
 		}
 	case TAG_FIXED_LIST:
 		value = &state.Value{Value: &state.Value_BytesValue{BytesValue: c.Bytes}}
-	// TODO
-	case TAG_UNIT:
-
-	case TAG_OPTION:
-
-	case TAG_RESULT:
-
-	case TAG_MAP:
-
-	case TAG_TUPLE1:
-
-	case TAG_TUPLE2:
-
-	case TAG_TUPLE3:
-
-	case TAG_ANY:
-
 	}
 	return value
 }
@@ -339,7 +321,7 @@ func (c CLValue) FromStateValue(value *state.Value) (CLValue, error) {
 	return c, nil
 }
 
-func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue, error) {
+func (c CLValue) FromCLValueInstanceValue(value *state.CLValueInstance_Value) (CLValue, error) {
 	switch value.GetValue().(type) {
 	case *state.CLValueInstance_Value_I32:
 		res := make([]byte, INT32_LENGTH)
@@ -414,7 +396,7 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		c.Bytes = uref.ToBytes()
 		c.Tags = []CL_TYPE_TAG{TAG_UREF}
 	case *state.CLValueInstance_Value_OptionValue:
-		clValue, err := c.FromDeployArgValue(value.GetOptionValue().GetValue())
+		clValue, err := c.FromCLValueInstanceValue(value.GetOptionValue().GetValue())
 		if err != nil {
 			return CLValue{}, err
 		}
@@ -431,7 +413,7 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		res := make([]byte, SIZE_LENGTH)
 		binary.LittleEndian.PutUint32(res, uint32(len(value.GetListValue().GetValues())))
 		for idx, val := range value.GetListValue().GetValues() {
-			clValue, err := c.FromDeployArgValue(val)
+			clValue, err := c.FromCLValueInstanceValue(val)
 			if err != nil {
 				return CLValue{}, err
 			}
@@ -447,7 +429,7 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		res := make([]byte, SIZE_LENGTH)
 		binary.LittleEndian.PutUint32(res, uint32(len(value.GetListValue().GetValues())))
 		for idx, val := range value.GetFixedListValue().GetValues() {
-			clValue, err := c.FromDeployArgValue(val)
+			clValue, err := c.FromCLValueInstanceValue(val)
 			if err != nil {
 				return CLValue{}, err
 			}
@@ -463,13 +445,13 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 		res := make([]byte, SIZE_LENGTH)
 		binary.LittleEndian.PutUint32(res, uint32(len(value.GetMapValue().GetValues())))
 		for idx, val := range value.GetMapValue().GetValues() {
-			clValueKey, err := c.FromDeployArgValue(val.GetKey())
+			clValueKey, err := c.FromCLValueInstanceValue(val.GetKey())
 			if err != nil {
 				return CLValue{}, err
 			}
 			c.Bytes = append(res, clValueKey.Bytes...)
 
-			clValueValue, err := c.FromDeployArgValue(val.GetValue())
+			clValueValue, err := c.FromCLValueInstanceValue(val.GetValue())
 			if err != nil {
 				return CLValue{}, err
 			}
@@ -480,7 +462,6 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 				c.Tags = append(c.Tags, clValueValue.Tags...)
 			}
 		}
-	// TODO
 	case *state.CLValueInstance_Value_Unit:
 	case *state.CLValueInstance_Value_ResultValue:
 	case *state.CLValueInstance_Value_Tuple1Value:
@@ -494,6 +475,197 @@ func (c CLValue) FromDeployArgValue(value *state.CLValueInstance_Value) (CLValue
 	}
 
 	return c, nil
+}
+
+func (c CLValue) ToCLInstanceValue() (value *state.CLValueInstance_Value) {
+	value = &state.CLValueInstance_Value{}
+
+	switch c.Tags[TAG_INDEX] {
+	case TAG_BOOL:
+		boolValue := false
+		if c.Bytes[0] == 1 {
+			boolValue = true
+		}
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_BoolValue{
+				BoolValue: boolValue,
+			},
+		}
+	case TAG_I32:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_I32{
+				I32: int32(binary.LittleEndian.Uint32(c.Bytes)),
+			},
+		}
+	case TAG_I64:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_I64{
+				I64: int64(binary.LittleEndian.Uint64(c.Bytes)),
+			},
+		}
+	case TAG_U8:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_U8{
+				U8: int32(c.Bytes[0]),
+			},
+		}
+	case TAG_U32:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_U32{
+				U32: binary.LittleEndian.Uint32(c.Bytes),
+			},
+		}
+	case TAG_U64:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_U64{
+				U64: binary.LittleEndian.Uint64(c.Bytes),
+			},
+		}
+	case TAG_U128:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_U128{
+				U128: &state.CLValueInstance_U128{
+					Value: fromByteToBigInt(c.Bytes).String(),
+				},
+			},
+		}
+	case TAG_U256:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_U256{
+				U256: &state.CLValueInstance_U256{
+					Value: fromByteToBigInt(c.Bytes).String(),
+				},
+			},
+		}
+	case TAG_U512:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_U512{
+				U512: &state.CLValueInstance_U512{
+					Value: fromByteToBigInt(c.Bytes).String(),
+				},
+			},
+		}
+	case TAG_STRING:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_StrValue{
+				StrValue: string(c.Bytes),
+			},
+		}
+	case TAG_KEY:
+		var key Key
+		key, _, _ = key.FromBytes(c.Bytes)
+		value = key.ToCLInstanceValue()
+	case TAG_UREF:
+		var uref URef
+		uref, _, _ = uref.FromBytes(c.Bytes)
+		value = uref.ToCLInstanceValue()
+	case TAG_LIST:
+		entrys := []*state.CLValueInstance_Value{}
+		length := int(binary.LittleEndian.Uint32(c.Bytes[:SIZE_LENGTH]))
+		pos := length
+		for i := 0; i < length; i++ {
+			entry, entryLength := parserClInstanceValue(c.Bytes[pos:], c.Tags[TAG_LENGTH])
+			entrys = append(entrys, entry)
+			pos += entryLength
+		}
+
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_ListValue{
+				ListValue: &state.CLValueInstance_List{
+					Values: entrys,
+				},
+			},
+		}
+
+	case TAG_FIXED_LIST:
+		entrys := []*state.CLValueInstance_Value{}
+		length := int(binary.LittleEndian.Uint32(c.Bytes[:SIZE_LENGTH]))
+		pos := length
+		for i := 0; i < length; i++ {
+			entry, entryLength := parserClInstanceValue(c.Bytes[pos:], c.Tags[TAG_LENGTH])
+			entrys = append(entrys, entry)
+			pos += entryLength
+		}
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_FixedListValue{
+				FixedListValue: &state.CLValueInstance_FixedList{
+					Length: uint32(length),
+					Values: entrys,
+				},
+			},
+		}
+	case TAG_MAP:
+		entrys := []*state.CLValueInstance_MapEntry{}
+		length := int(binary.LittleEndian.Uint32(c.Bytes[:SIZE_LENGTH]))
+		pos := SIZE_LENGTH
+		for i := 0; i < length; i++ {
+			// key
+			entryKey, entryKeyLength := parserClInstanceValue(c.Bytes[pos:], c.Tags[TAG_LENGTH])
+			pos += entryKeyLength
+
+			// value
+			entryValue, entryValueLength := parserClInstanceValue(c.Bytes[pos:], c.Tags[TAG_LENGTH+TAG_LENGTH])
+			pos += entryValueLength
+
+			entry := &state.CLValueInstance_MapEntry{
+				Key:   entryKey,
+				Value: entryValue,
+			}
+
+			entrys = append(entrys, entry)
+		}
+
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_MapValue{
+				MapValue: &state.CLValueInstance_Map{
+					Values: entrys,
+				},
+			},
+		}
+	case TAG_UNIT:
+
+	case TAG_OPTION:
+
+	case TAG_RESULT:
+
+	case TAG_TUPLE1:
+
+	case TAG_TUPLE2:
+
+	case TAG_TUPLE3:
+
+	case TAG_ANY:
+	}
+
+	return value
+}
+
+func parserClInstanceValue(src []byte, tag CL_TYPE_TAG) (value *state.CLValueInstance_Value, length int) {
+	pos := 0
+	length = 0
+
+	switch tag {
+	case TAG_I32, TAG_U32:
+		length = INT32_LENGTH
+	case TAG_I64, TAG_U64:
+		length = LONG_LENGTH
+	case TAG_U8:
+		value = &state.CLValueInstance_Value{
+			Value: &state.CLValueInstance_Value_BytesValue{
+				BytesValue: src,
+			},
+		}
+
+		return value, len(src)
+	default:
+		length = int(binary.LittleEndian.Uint32(src[:SIZE_LENGTH]))
+		pos += SIZE_LENGTH
+	}
+
+	clValue := NewClValue(src[pos:pos+length], []CL_TYPE_TAG{tag})
+	value = clValue.ToCLInstanceValue()
+
+	return value, pos + length
 }
 
 func reverseBytes(src []byte) []byte {
