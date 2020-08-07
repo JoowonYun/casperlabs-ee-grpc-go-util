@@ -86,9 +86,9 @@ func (c Contract) ToStateValue() *state.Contract {
 	}
 
 	return &state.Contract{
-		Body:            c.Body,
-		NamedKeys:       stateNamedKeys,
-		ProtocolVersion: c.ProtocolVersion.ToStateValue(),
+		ContractPackageHash: c.Body,
+		NamedKeys:           stateNamedKeys,
+		ProtocolVersion:     c.ProtocolVersion.ToStateValue(),
 	}
 }
 
@@ -104,7 +104,7 @@ func (c Contract) FromStateValue(state *state.Contract) (Contract, error) {
 	}
 
 	return NewContract(
-		state.Body,
+		state.ContractPackageHash,
 		namedKeys,
 		NewProtocolVersion(state.ProtocolVersion.GetMajor(), state.ProtocolVersion.GetMinor(), state.ProtocolVersion.GetPatch()),
 	), nil

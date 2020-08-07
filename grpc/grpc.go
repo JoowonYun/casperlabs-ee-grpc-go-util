@@ -30,7 +30,7 @@ const (
 	ACTION_PREFIX_VOTED  = 3
 
 	PREFIX_COMMISSION = 32
-	PREFIX_REWARD = 33
+	PREFIX_REWARD     = 33
 )
 
 var (
@@ -57,9 +57,15 @@ func Connect(path string) ipc.ExecutionEngineServiceClient {
 // RunGenesis 후 결과를 return 받는다.
 func RunGenesis(
 	client ipc.ExecutionEngineServiceClient, genesisConfig *ipc.ChainSpec_GenesisConfig) (*ipc.GenesisResponse, error) {
+
+	req := &ipc.RunGenesisRequest{
+		GenesisConfigHash: make([]byte, 32),
+		EeConfig:          genesisConfig.GetEeConfig(),
+		ProtocolVersion:   genesisConfig.GetProtocolVersion(),
+	}
 	return client.RunGenesis(
 		context.TODO(),
-		genesisConfig)
+		req)
 }
 
 // Commit 은 Execute한 effects를 적용시킬 때 사용하는 함수.
@@ -99,9 +105,6 @@ func Commit(client ipc.ExecutionEngineServiceClient,
 		case *state.Key_Uref:
 			errMessage = fmt.Sprintf("%s\n(Uref)", errMessage)
 			hashValue = r.GetKeyNotFound().GetUref().GetUref()
-		case *state.Key_Local_:
-			errMessage = fmt.Sprintf("%s\n(Local)", errMessage)
-			hashValue = r.GetKeyNotFound().GetLocal().GetHash()
 		}
 		errMessage = fmt.Sprintf("%s : %s", errMessage, util.EncodeToHexString(hashValue))
 	case *ipc.CommitResponse_TypeMismatch:
@@ -128,8 +131,6 @@ func Query(client ipc.ExecutionEngineServiceClient,
 	switch keyType {
 	case STR_ADDRESS:
 		key = &state.Key{Value: &state.Key_Address_{Address: &state.Key_Address{Account: keyData}}}
-	case STR_LOCAL:
-		key = &state.Key{Value: &state.Key_Local_{Local: &state.Key_Local{Hash: keyData}}}
 	case STR_UREF:
 		key = &state.Key{Value: &state.Key_Uref{Uref: &state.Key_URef{Uref: keyData}}}
 	case STR_HASH:
@@ -255,17 +256,8 @@ func QueryBalance(client ipc.ExecutionEngineServiceClient,
 	}
 	account := storedValue.Account
 	purseID := account.MainPurse.GetAddress()
-	var mintUref []byte
-	for _, namedKey := range account.NamedKeys {
-		if namedKey.Name == STR_MINT {
-			mintUref = namedKey.Key.Uref.Address
-			break
-		}
-	}
 
-	localBytes := util.MakeLocalKey(mintUref, purseID)
-
-	res, errMessage = Query(client, stateHash, STR_LOCAL, localBytes, []string{}, protocolVersion)
+	res, errMessage = Query(client, stateHash, STR_HASH, purseID, []string{}, protocolVersion)
 	if errMessage != "" {
 		return balance, errMessage
 	}

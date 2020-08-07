@@ -38,10 +38,11 @@ var (
 	ADDRESS1_DAPP   = util.DecodeHexString(ADDRESS1_DAPP_HEX)
 	DAPP_HASH       = util.DecodeHexString(DAPP_HASH_HEX)
 
-	DEFAULT_GENESIS_ACCOUNT = []*ipc.ChainSpec_GenesisAccount{{
-		PublicKey:    GENESIS_ADDRESS,
-		Balance:      &state.BigInt{Value: INITIAL_BALANCE, BitWidth: 512},
-		BondedAmount: &state.BigInt{Value: INITIAL_BOND_AMOUNT, BitWidth: 512}}}
+	DEFAULT_GENESIS_ACCOUNT = []*ipc.ChainSpec_GenesisConfig_ExecConfig_GenesisAccount{
+		{
+			PublicKeyHash: GENESIS_ADDRESS,
+			Balance:       &state.BigInt{Value: INITIAL_BALANCE, BitWidth: 512},
+			BondedAmount:  &state.BigInt{Value: INITIAL_BOND_AMOUNT, BitWidth: 512}}}
 )
 
 func GetPaymentArgsJson(fee string) string {
@@ -54,7 +55,7 @@ func GetPaymentArgsJson(fee string) string {
 					Value: &state.CLValueInstance_Value_StrValue{
 						StrValue: "standard_payment"}}}},
 		&consensus.Deploy_Arg{
-			Name: "fee",
+			Name: "amount",
 			Value: &state.CLValueInstance{
 				ClType: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U512}},
 				Value: &state.CLValueInstance_Value{
@@ -69,7 +70,7 @@ func GetPaymentArgsJson(fee string) string {
 	return paymentArgsStr
 }
 
-func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount) (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
+func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisConfig_ExecConfig_GenesisAccount) (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
@@ -156,7 +157,7 @@ func RunTransferToAccount(client ipc.ExecutionEngineServiceClient, stateHash []b
 					Value: &state.CLValueInstance_Value_StrValue{
 						StrValue: "transfer_to_account"}}}},
 		&consensus.Deploy_Arg{
-			Name: "address",
+			Name: "target",
 			Value: &state.CLValueInstance{
 				ClType: &state.CLType{Variants: &state.CLType_ListType{ListType: &state.CLType_List{Inner: &state.CLType{Variants: &state.CLType_SimpleType{SimpleType: state.CLType_U8}}}}},
 				Value: &state.CLValueInstance_Value{

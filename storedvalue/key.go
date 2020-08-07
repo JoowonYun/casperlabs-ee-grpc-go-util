@@ -123,8 +123,6 @@ func (k Key) ToStateValue() *state.Key {
 		value = &state.Key{Value: &state.Key_Hash_{Hash: &state.Key_Hash{Hash: k.Hash}}}
 	case KEY_ID_UREF:
 		value = &state.Key{Value: &state.Key_Uref{Uref: k.Uref.ToStateValue()}}
-	case KEY_ID_LOCAL:
-		value = &state.Key{Value: &state.Key_Local_{Local: &state.Key_Local{Hash: k.Local}}}
 	}
 
 	return value
@@ -144,8 +142,6 @@ func (k Key) FromStateValue(key *state.Key) (Key, error) {
 	case *state.Key_Uref:
 		uref := NewURef(key.GetUref().GetUref(), key.GetUref().GetAccessRights())
 		k = NewKeyFromURef(uref)
-	case *state.Key_Local_:
-		k = NewKeyFromLocal(key.GetLocal().GetHash())
 	default:
 		errors.New("Key data is invalid.")
 	}

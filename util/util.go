@@ -66,6 +66,11 @@ func AbiDeployArgsTobytes(src []*consensus.Deploy_Arg) ([]byte, error) {
 	binary.LittleEndian.PutUint32(res, uint32(len(src)))
 
 	for _, deployArg := range src {
+		nameBytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(nameBytes, uint32(len(deployArg.GetName())))
+		nameBytes = append(nameBytes, []byte(deployArg.GetName())...)
+		res = append(res, nameBytes...)
+
 		var clValue storedvalue.CLValue
 		clValue, err := clValue.FromCLValueInstanceValue(deployArg.GetValue().GetValue())
 		if err != nil {
@@ -152,11 +157,11 @@ func MakeDeploy(
 	bodyHash := Blake2b256(marshalDeployBody)
 
 	deployHeader := &consensus.Deploy_Header{
-		AccountPublicKey: fromAddress,
-		Timestamp:        timestamp,
-		GasPrice:         gasPrice,
-		BodyHash:         bodyHash,
-		ChainName:        chainName}
+		AccountPublicKeyHash: fromAddress,
+		Timestamp:            timestamp,
+		GasPrice:             gasPrice,
+		BodyHash:             bodyHash,
+		ChainName:            chainName}
 
 	marshalDeployHeader, _ := proto.Marshal(deployHeader)
 	headerHash := Blake2b256(marshalDeployHeader)
@@ -195,13 +200,9 @@ func MakeDeployCode(contractType ContractType, data []byte, args []*consensus.De
 	deployCode := &consensus.Deploy_Code{Args: args}
 	switch contractType {
 	case WASM:
-		deployCode.Contract = &consensus.Deploy_Code_Wasm{Wasm: data}
-	case UREF:
-		deployCode.Contract = &consensus.Deploy_Code_Uref{Uref: data}
-	case HASH:
-		deployCode.Contract = &consensus.Deploy_Code_Hash{Hash: data}
-	case NAME:
-		deployCode.Contract = &consensus.Deploy_Code_Name{Name: string(data)}
+		deployCode.Contract = &consensus.Deploy_Code_WasmContract_{
+			WasmContract: &consensus.Deploy_Code_WasmContract{
+				Wasm: data}}
 	default:
 		deployCode = nil
 	}
@@ -214,12 +215,8 @@ func MakeDeployPayload(contractType ContractType, data []byte, args []byte) *ipc
 	switch contractType {
 	case WASM:
 		deployPayload.Payload = &ipc.DeployPayload_DeployCode{DeployCode: &ipc.DeployCode{Code: data, Args: args}}
-	case UREF:
-		deployPayload.Payload = &ipc.DeployPayload_StoredContractUref{StoredContractUref: &ipc.StoredContractURef{Uref: data, Args: args}}
 	case HASH:
 		deployPayload.Payload = &ipc.DeployPayload_StoredContractHash{StoredContractHash: &ipc.StoredContractHash{Hash: data, Args: args}}
-	case NAME:
-		deployPayload.Payload = &ipc.DeployPayload_StoredContractName{StoredContractName: &ipc.StoredContractName{StoredContractName: string(data), Args: args}}
 	default:
 		deployPayload = nil
 	}
@@ -238,7 +235,7 @@ func AddDeploy(deploys []*ipc.DeployItem, deploy *ipc.DeployItem) []*ipc.DeployI
 }
 
 func GenesisConfigMock(
-	chainName string, genesisAccount []*ipc.ChainSpec_GenesisAccount, protocolVersion *state.ProtocolVersion,
+	chainName string, genesisAccount []*ipc.ChainSpec_GenesisConfig_ExecConfig_GenesisAccount, protocolVersion *state.ProtocolVersion,
 	mapCosts map[string]uint32, mintInstallWasmPath string, posInstallWasmPath string, standardPaymentInstallWasmPath string) (
 	*ipc.ChainSpec_GenesisConfig, error) {
 	genesisConfig := ipc.ChainSpec_GenesisConfig{}
@@ -247,27 +244,24 @@ func GenesisConfigMock(
 	genesisConfig.ProtocolVersion = protocolVersion
 
 	// load mint_install.wasm, pos_install.wasm
-
-	genesisConfig.MintInstaller = LoadWasmFile(mintInstallWasmPath)
-	genesisConfig.PosInstaller = LoadWasmFile(posInstallWasmPath)
-	genesisConfig.StandardPaymentInstaller = LoadWasmFile(standardPaymentInstallWasmPath)
-
-	// GenesisAccount
-	genesisConfig.Accounts = genesisAccount
-
-	// CostTable
-	genesisConfig.Costs = &ipc.ChainSpec_CostTable{
-		Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
-			Regular:        mapCosts["regular"],
-			Div:            mapCosts["div-multiplier"],
-			Mul:            mapCosts["mul-multiplier"],
-			Mem:            mapCosts["mem-multiplier"],
-			InitialMem:     mapCosts["mem-initial-pages"],
-			GrowMem:        mapCosts["mem-grow-per-page"],
-			Memcpy:         mapCosts["mem-copy-per-byte"],
-			MaxStackHeight: mapCosts["max-stack-height"],
-			OpcodesMul:     mapCosts["opcodes-multiplier"],
-			OpcodesDiv:     mapCosts["opcodes-divisor"]}}
+	genesisConfig.EeConfig = &ipc.ChainSpec_GenesisConfig_ExecConfig{
+		MintInstaller:            LoadWasmFile(mintInstallWasmPath),
+		PosInstaller:             LoadWasmFile(posInstallWasmPath),
+		StandardPaymentInstaller: LoadWasmFile(standardPaymentInstallWasmPath),
+		Accounts:                 genesisAccount,
+		Costs: &ipc.ChainSpec_CostTable{
+			Wasm: &ipc.ChainSpec_CostTable_WasmCosts{
+				Regular:        mapCosts["regular"],
+				Div:            mapCosts["div-multiplier"],
+				Mul:            mapCosts["mul-multiplier"],
+				Mem:            mapCosts["mem-multiplier"],
+				InitialMem:     mapCosts["mem-initial-pages"],
+				GrowMem:        mapCosts["mem-grow-per-page"],
+				Memcpy:         mapCosts["mem-copy-per-byte"],
+				MaxStackHeight: mapCosts["max-stack-height"],
+				OpcodesMul:     mapCosts["opcodes-multiplier"],
+				OpcodesDiv:     mapCosts["opcodes-divisor"]}},
+	}
 
 	genesisConfig.DeployConfig = &ipc.ChainSpec_DeployConfig{
 		MaxTtlMillis:      86400000,
