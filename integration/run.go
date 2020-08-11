@@ -26,7 +26,7 @@ const (
 	INITIAL_BALANCE     = "50000000000000000000000"
 	INITIAL_BOND_AMOUNT = "1000000000000000000"
 
-	BASIC_FEE = "100000000000000000"
+	BASIC_FEE    = "100000000000000000"
 	ADVANCED_FEE = "300000000000000000"
 
 	DAPP_HASH_HEX = "01d70243dd9d0d646fd6df282a8f7a8fa05a6629bec01d8024c3611eb1c1fb9f84"
@@ -70,7 +70,7 @@ func GetPaymentArgsJson(fee string) string {
 	return paymentArgsStr
 }
 
-func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount) (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
+func InitalRunGenensis(mintPath string, posPath string, standardpaymentPath string, genesisAccounts []*ipc.ChainSpec_GenesisAccount) (ipc.ExecutionEngineServiceClient, []byte, []byte, *state.ProtocolVersion) {
 	// Init variable
 	emptyStateHash := util.DecodeHexString(util.StrEmptyStateHash)
 	rootStateHash := emptyStateHash
@@ -97,7 +97,7 @@ func InitalRunGenensis(genesisAccounts []*ipc.ChainSpec_GenesisAccount) (ipc.Exe
 	println(`RunGenesis`)
 	genesisConfig, err := util.GenesisConfigMock(
 		CHAIN_NAME, genesisAccounts, protocolVersion, costs,
-		"./contracts/hdac_mint_install.wasm", "./contracts/pop_install.wasm", "./contracts/standard_payment_install.wasm")
+		mintPath, posPath, standardpaymentPath)
 	if err != nil {
 		panic(err)
 	}
@@ -504,7 +504,7 @@ func RunExecute(client ipc.ExecutionEngineServiceClient, stateHash []byte,
 	deploys = util.AddDeploy(deploys, deploy)
 
 	res, err := grpc.Execute(client, stateHash, timestamp, deploys, protocolVersion)
-	effect, err := executeErrorHandler(res)
+	effect, err := ExecuteErrorHandler(res)
 	if err != nil {
 		panic(err)
 	}
@@ -532,7 +532,7 @@ func RunQuery(client ipc.ExecutionEngineServiceClient, stateHash []byte, types s
 	return storedValue
 }
 
-func executeErrorHandler(r *ipc.ExecuteResponse) (effects []*transforms.TransformEntry, err error) {
+func ExecuteErrorHandler(r *ipc.ExecuteResponse) (effects []*transforms.TransformEntry, err error) {
 	switch r.GetResult().(type) {
 	case *ipc.ExecuteResponse_Success:
 		for _, res := range r.GetSuccess().GetDeployResults() {

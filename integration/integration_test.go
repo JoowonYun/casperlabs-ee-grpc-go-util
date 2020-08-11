@@ -10,8 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	mintPath            = "./contracts/hdac_mint_install.wasm"
+	posPath             = "./contracts/pop_install.wasm"
+	standardPaymentPath = "./contracts/standard_payment_install.wasm"
+)
+
 func TestCustomContractCounter(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 
 	// counterDefine
 	rootStateHash, _ = RunCounterDefine(client, rootStateHash, GENESIS_ADDRESS, proxyHash, protocolVersion)
@@ -36,7 +42,7 @@ func TestCustomContractCounter(t *testing.T) {
 }
 
 func TestTransferToAccount(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	amount := "900000000000000000"
 
 	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
@@ -47,7 +53,7 @@ func TestTransferToAccount(t *testing.T) {
 }
 
 func TestBondAndUnbond(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	bondAmount := "10000000000000000"
 
 	// bond
@@ -74,7 +80,7 @@ func TestBondAndUnbond(t *testing.T) {
 }
 
 func TestDelegate(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	amount := "100"
 
 	rootStateHash, bonds := RunBond(client, rootStateHash, GENESIS_ADDRESS, amount, proxyHash, protocolVersion)
@@ -88,7 +94,7 @@ func TestDelegate(t *testing.T) {
 }
 
 func TestDelegateFromAnotherAddress(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	amount := "10000000000000000000"
 	delegateAmount := "1000000000000000"
 
@@ -108,7 +114,7 @@ func TestDelegateFromAnotherAddress(t *testing.T) {
 }
 
 func TestUndelegation(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	amount := "100"
 
 	rootStateHash, bonds := RunUndelegate(client, rootStateHash, GENESIS_ADDRESS, GENESIS_ADDRESS, amount, proxyHash, protocolVersion)
@@ -117,7 +123,7 @@ func TestUndelegation(t *testing.T) {
 }
 
 func TestRedelegation(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	amount := "100"
 
 	rootStateHash, bonds := RunRedelegate(client, rootStateHash, GENESIS_ADDRESS, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
@@ -126,7 +132,7 @@ func TestRedelegation(t *testing.T) {
 }
 
 func TestVoteAndUnvote(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	voteAmount := "123"
 
 	rootStateHash, _ = RunVote(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, voteAmount, proxyHash, protocolVersion)
@@ -159,7 +165,7 @@ func TestVoteAndUnvote(t *testing.T) {
 }
 
 func TestVoteMoreAccount(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	address2 := util.DecodeHexString("03170a2e7597b7b7e3d84c05391d139a62b157e78786d8c082f29dcf4c111314")
 	address3 := util.DecodeHexString("f0f84944e0ccfa9e67383e6a448291787d208c8e46adc849f714078663d1dd36")
 
@@ -199,11 +205,11 @@ func TestVoteMoreAccount(t *testing.T) {
 }
 
 func TestStepAndClaim(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 	amount := "1000000000000000000"
 	stakeAmount := "100000000000000000"
 
-        // delegate from ADDRESS1 to GENESIS_ADDRESS
+	// delegate from ADDRESS1 to GENESIS_ADDRESS
 	rootStateHash, _ = RunTransferToAccount(client, rootStateHash, GENESIS_ADDRESS, ADDRESS1, amount, proxyHash, protocolVersion)
 	rootStateHash, _ = RunBond(client, rootStateHash, ADDRESS1, stakeAmount, proxyHash, protocolVersion)
 	rootStateHash, _ = RunDelegate(client, rootStateHash, ADDRESS1, GENESIS_ADDRESS, stakeAmount, proxyHash, protocolVersion)
@@ -223,7 +229,7 @@ func TestStepAndClaim(t *testing.T) {
 	assert.Equal(t, "", errMessage)
 	assert.Equal(t, beforeGenesisAmount, afterStepGenesisAmount)
 
-        // check reward and commission is generated
+	// check reward and commission is generated
 	step10Address1Reward, errMessage := grpc.QueryReward(client, rootStateHash, ADDRESS1, protocolVersion)
 	assert.Equal(t, "", errMessage)
 	assert.NotEqual(t, "", step10Address1Reward)
@@ -253,7 +259,7 @@ func TestStepAndClaim(t *testing.T) {
 	assert.Equal(t, "", errMessage)
 	assert.NotEqual(t, afterClaimCommissionGenesisAmount, afterClaimRewardGenesisAmount)
 
-        // check reward and commission is claimed
+	// check reward and commission is claimed
 	afterClaimAddress1Reward, errMessage := grpc.QueryReward(client, rootStateHash, ADDRESS1, protocolVersion)
 	assert.Equal(t, "", errMessage)
 	assert.Equal(t, "", errMessage)
@@ -286,7 +292,7 @@ func xTestImport(t *testing.T) {
 	REWARD_FROM_GENESIS_ADDR := "123"
 	COMMISSION_FROM_GENSIS_ADDR := "456"
 
-	client, rootStateHash, _, protocolVersion := InitalRunGenensis(genesisAccounts)
+	client, rootStateHash, _, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, genesisAccounts)
 
 	storedValue := RunQuery(client, rootStateHash, "address", SYSTEM_ACCOUNT, []string{"pos"}, protocolVersion)
 
@@ -306,7 +312,7 @@ func xTestImport(t *testing.T) {
 }
 
 func TestStandardPayment(t *testing.T) {
-	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(DEFAULT_GENESIS_ACCOUNT)
+	client, rootStateHash, proxyHash, protocolVersion := InitalRunGenensis(mintPath, posPath, standardPaymentPath, DEFAULT_GENESIS_ACCOUNT)
 
 	paymentStr := GetPaymentArgsJson(BASIC_FEE)
 
