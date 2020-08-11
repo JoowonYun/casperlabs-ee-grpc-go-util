@@ -21,3 +21,11 @@ proto:
 .PHONY: integration-tests
 integration-tests:
 	go test ./integration
+
+.PHONY: bench-hdac
+bench-hdac:
+	go test ./benchhdac -timeout 3h
+
+.PHONY: bench-casperlabs
+bench-casperlabs:
+	go test ./benchcasperlabs -timeout 3h
